@@ -1,0 +1,14 @@
+__pycache__/
+data/
+wryteai2nd/
+models/
+.streamlit/
+cache/
+exports/
+storage/
+wryteai_storage/
+.env
+models/
+codes/
+
+
