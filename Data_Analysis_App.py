@@ -240,7 +240,7 @@ def show_data_overview(data):
                         with st.container():
                             data_informations(data)
 
-                    st.markdown("<h3>:blue[Column Information]:</h3>", unsafe_allow_html=True)
+                    st.markdown("<h3>Column Information:</h3>", unsafe_allow_html=True)
                     st.write('')
                     st.write('')
                                 
@@ -382,7 +382,7 @@ def check_duplicates(data):
     if 'duplicated' not in st.session_state:
         st.session_state.duplicated = False
 
-    if st.button('Check Duplicate Values'):
+    if st.button('Check Duplicate Values', use_container_width=True):
         st.session_state.duplicated = not st.session_state.duplicated
 
     if st.session_state.duplicated:
@@ -881,7 +881,7 @@ def display_cleaning_methods(data):
         st.header('Data Cleaning')
         csv_data = download_cleaned_data(data)
         if csv_data is not None:        
-            st.download_button(label='Download Cleaned CSV', data=csv_data, file_name='cleaned_data.csv', mime='text/csv')
+            st.download_button(label='Download Cleaned CSV', data=csv_data, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
         else:
             print("Data is not available for download.")
     else:
