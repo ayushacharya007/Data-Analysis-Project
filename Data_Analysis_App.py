@@ -237,16 +237,10 @@ def show_data_overview(data):
                 with st.container():
                     overview_tab, alerts_tab = st.tabs(["Overview", "Alerts"])
                     with overview_tab:
-                        _,stat, _,type,_= st.columns([0.3,3,0.5,2,0.3])
-                        with stat:
-                            statistics(data)
-                            
-                        with type:
-                            data_types(data)
-                    st.write('')
-                    st.write('')
+                        with st.container():
+                            data_informations(data)
 
-                    st.markdown("<h3>Column Information:</h3>", unsafe_allow_html=True)
+                    st.markdown("<h3>:blue[Column Information]:</h3>", unsafe_allow_html=True)
                     st.write('')
                     st.write('')
                                 
@@ -254,11 +248,11 @@ def show_data_overview(data):
                         with st.container():
                             _, alert, _ = st.columns([0.2, 3, 0.3])
                             with alert:
-                                st.write('')
+                                with st.container():
                                 # Generate alerts
-                                st.markdown("<h5 style='color: dodgerblue;'>Alerts</h5>", unsafe_allow_html=True)
-                                alerts = generate_alerts(data)
-                                st.markdown(alerts, unsafe_allow_html=True)
+                                    st.markdown("<h5 style='color: dodgerblue;'>Alerts</h5>", unsafe_allow_html=True)
+                                    alerts = generate_alerts(data)
+                                    st.markdown(alerts, unsafe_allow_html=True)
 
                 with st.container():
                     data_overview(data)
