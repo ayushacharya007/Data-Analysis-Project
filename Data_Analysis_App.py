@@ -109,6 +109,19 @@ def statistics(data):
     st.write('')
 
 @st.cache_data
+def data_types(data):
+    st.markdown("<div class='stat-box'><div class='stat-title'>Variable Types</div>", unsafe_allow_html=True)
+    variable_types = [str(data[col].dtype) for col in data.columns]
+    variable_types_counts = dict(Counter(variable_types))
+    variable_types_df = pd.DataFrame.from_dict(variable_types_counts, orient='index', columns=["Count"]).reset_index()
+    variable_types_df.columns = ["Type", "Count"]
+
+                            # Convert DataFrame to HTML and add CSS classes
+    html = variable_types_df.to_html(index=False, classes=['stat-table'])
+
+    st.markdown(html, unsafe_allow_html=True)
+
+@st.cache_data
 def data_informations(data):
     with st.container():
         for col in data.columns:
@@ -230,7 +243,7 @@ def show_data_overview(data):
                             statistics(data)
                             
                         with type:
-                            correct_data_types(data)
+                            data_types(data)
                     st.write('')
                     st.write('')
 
