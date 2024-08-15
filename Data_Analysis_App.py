@@ -145,102 +145,103 @@ def data_types(data):
 
 @st.cache_data
 def data_informations(data):
-    for col in data.columns:
-        st.markdown(f"<div class='info-box'><div class='info-column-title' style='text-align:left; margin-bottom:10px;'>{col}</div>", unsafe_allow_html=True)
-                            
-        # Get the data type of the column
-        col_type = str(data[col].dtype)
+    with st.container():
+        for col in data.columns:
+            with st.container():
+                info, viz = st.columns([2, 2])
+                with info:
+                    st.markdown(f"<div class='info-box'><div class='info-column-title' style='text-align:left; margin-bottom:10px;'>{col}</div>", unsafe_allow_html=True)        
+                    # Get the data type of the column
+                    col_type = str(data[col].dtype)
+                    # Create list of statistics
+                    informations = [
+                                ["Type", col_type],
+                                ["Distinct Values", data[col].nunique()],
+                                ["Distinct Percentage", f"{data[col].nunique() / len(data) * 100:.2f}%"],
+                                ["Missing Values", data[col].isnull().sum()],
+                                ["Missing Percentage", f"{data[col].isnull().mean() * 100:.2f}%"]
+                            ]
+                    for info in informations:
+                        st.markdown(f'<table class="info-table"><tr><td>{info[0]}</td><td>{info[1]}</td></tr></table>', unsafe_allow_html=True)
+                    st.write('')
+                    st.write('')
+                with viz:
+                    # Display the information in a table
+                    col_type = str(data[col].dtype)
+                    # Numeric columns
+                    if col_type in ['int64', 'float64']:
+                        if data[col].nunique() <= 10 and data[col].nunique() > 3:
+                            value_counts = data[col].value_counts().sort_values(ascending=False)
+                            top_values = value_counts[:3]
+                            others = pd.Series(value_counts[3:].sum(), index=['Others'])
+                            plot_data = pd.concat([top_values, others]).reset_index()
+                            plot_data.columns = [col, 'count']
+                            fig = px.bar(plot_data, y=col, x='count', height=350, width=500)
+                            fig.update_xaxes(title_text='')
+                            fig.update_yaxes(title_text='')
+                            st.plotly_chart(fig)
 
-        # Create list of statistics
-        informations = [
-                    ["Type", col_type],
-                    ["Distinct Values", data[col].nunique()],
-                    ["Distinct Percentage", f"{data[col].nunique() / len(data) * 100:.2f}%"],
-                    ["Missing Values", data[col].isnull().sum()],
-                    ["Missing Percentage", f"{data[col].isnull().mean() * 100:.2f}%"]
-                ]
+                        elif data[col].nunique() <= 3:
+                            fig = px.bar(data, x=col, height=350, width=500)
+                            fig.update_xaxes(title_text='')
+                            fig.update_yaxes(title_text='')
+                            st.plotly_chart(fig)
+                        else:
+                            fig = px.histogram(data, x=col, height=350, width=500)
+                            fig.update_xaxes(title_text='')
+                            fig.update_yaxes(title_text='')
+                            fig.update_xaxes(showgrid=False)
+                            fig.update_yaxes(showgrid=False)
+                            st.plotly_chart(fig)
 
-        for info in informations:
-            st.markdown(f'<table class="info-table"><tr><td>{info[0]}</td><td>{info[1]}</td></tr></table>', unsafe_allow_html=True)
+                    # Object columns
+                    elif col_type == 'object':
+                        if data[col].nunique() < 10 and data[col].nunique() > 3:
+                            value_counts = data[col].value_counts().sort_values(ascending=False)
+                            top_values = value_counts[:3]
+                            others = pd.Series(value_counts[3:].sum(), index=['Others'])
+                            plot_data = pd.concat([top_values, others]).reset_index()
+                            plot_data.columns = [col, 'count']
+                            fig = px.bar(plot_data, y=col, x='count', height=350, width=500)
+                            fig.update_xaxes(title_text='')
+                            fig.update_yaxes(title_text='')
+                            st.plotly_chart(fig)
 
-        st.write('')
-        st.write('')
+                        elif data[col].nunique() <= 3:
+                            fig = px.histogram(data, y=col, height=350, width=500)
+                            fig.update_xaxes(title_text='')
+                            fig.update_yaxes(title_text='')
+                            fig.update_xaxes(showgrid=False)
+                            fig.update_yaxes(showgrid=False)
+                            st.plotly_chart(fig)
+                        else:
+                            try:
+                                # Generate the word cloud
+                                wordcloud = WordCloud(width=500, height=300, background_color='white', contour_color='black', contour_width=2).generate(' '.join(data[col].dropna().astype(str)))
+
+                                # Create a matplotlib figure and axis
+                                fig, ax = plt.subplots()
+                                ax.imshow(wordcloud, interpolation='bilinear')
+                                ax.axis("off")
+
+                                # Display the figure in Streamlit
+                                st.pyplot(fig)
+                            except ValueError as e:
+                                st.write(f"Could not generate word cloud for column '{col}': {str(e)}")
+
+                    # Datetime columns
+                    elif col_type == 'datetime64[ns]':
+                        fig = px.histogram(data, x=col, height=350, width=500)
+                        fig.update_xaxes(title_text='')
+                        fig.update_yaxes(title_text='')
+                        fig.update_xaxes(showgrid=False)
+                        fig.update_yaxes(showgrid=False)
+                        st.plotly_chart(fig)
     return col,col_type
 
-def overview_visuals(data):
-    for col in data.columns:
-        col_type = str(data[col].dtype)
+# def overview_visuals(data):
+#     for col in data.columns:
         
-        # Numeric columns
-        if col_type in ['int64', 'float64']:
-            if data[col].nunique() <= 10 and data[col].nunique() > 3:
-                value_counts = data[col].value_counts().sort_values(ascending=False)
-                top_values = value_counts[:3]
-                others = pd.Series(value_counts[3:].sum(), index=['Others'])
-                plot_data = pd.concat([top_values, others]).reset_index()
-                plot_data.columns = [col, 'count']
-                fig = px.bar(plot_data, y=col, x='count', height=350, width=500)
-                fig.update_xaxes(title_text='')
-                fig.update_yaxes(title_text='')
-                st.plotly_chart(fig)
-
-            elif data[col].nunique() <= 3:
-                fig = px.bar(data, x=col, height=350, width=500)
-                fig.update_xaxes(title_text='')
-                fig.update_yaxes(title_text='')
-                st.plotly_chart(fig)
-            else:
-                fig = px.histogram(data, x=col, height=350, width=500)
-                fig.update_xaxes(title_text='')
-                fig.update_yaxes(title_text='')
-                fig.update_xaxes(showgrid=False)
-                fig.update_yaxes(showgrid=False)
-                st.plotly_chart(fig)
-
-        # Object columns
-        elif col_type == 'object':
-            if data[col].nunique() < 10 and data[col].nunique() > 3:
-                value_counts = data[col].value_counts().sort_values(ascending=False)
-                top_values = value_counts[:3]
-                others = pd.Series(value_counts[3:].sum(), index=['Others'])
-                plot_data = pd.concat([top_values, others]).reset_index()
-                plot_data.columns = [col, 'count']
-                fig = px.bar(plot_data, y=col, x='count', height=350, width=500)
-                fig.update_xaxes(title_text='')
-                fig.update_yaxes(title_text='')
-                st.plotly_chart(fig)
-
-            elif data[col].nunique() <= 3:
-                fig = px.histogram(data, y=col, height=350, width=500)
-                fig.update_xaxes(title_text='')
-                fig.update_yaxes(title_text='')
-                fig.update_xaxes(showgrid=False)
-                fig.update_yaxes(showgrid=False)
-                st.plotly_chart(fig)
-            else:
-                try:
-                    # Generate the word cloud
-                    wordcloud = WordCloud(width=500, height=300, background_color='white', contour_color='black', contour_width=2).generate(' '.join(data[col].dropna().astype(str)))
-
-                    # Create a matplotlib figure and axis
-                    fig, ax = plt.subplots()
-                    ax.imshow(wordcloud, interpolation='bilinear')
-                    ax.axis("off")
-
-                    # Display the figure in Streamlit
-                    st.pyplot(fig)
-                except ValueError as e:
-                    st.write(f"Could not generate word cloud for column '{col}': {str(e)}")
-
-        # Datetime columns
-        elif col_type == 'datetime64[ns]':
-            fig = px.histogram(data, x=col, height=350, width=500)
-            fig.update_xaxes(title_text='')
-            fig.update_yaxes(title_text='')
-            fig.update_xaxes(showgrid=False)
-            fig.update_yaxes(showgrid=False)
-            st.plotly_chart(fig)
-
 
 # Function to show data overview
 def show_data_overview(data):
@@ -286,19 +287,18 @@ def show_data_overview(data):
                                 alerts = generate_alerts(data)
                                 st.markdown(alerts, unsafe_allow_html=True)
                 # Create columns
-                _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
+                # _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
 
                 # Iterate over each column
                 with st.container():
-                    with infos:
-                        data_informations(data)
-                        # write st.write('') 1o times using loop
-                        for i in range(5):
-                            st.write('')
-
-                        with viz:
-                            overview_visuals(data)
-
+                    data_informations(data)
+                    # with infos:
+                    #     data_informations(data)
+                    #     # write st.write('') 1o times using loop
+                    #     for i in range(5):
+                    #         st.write('')
+                    # with viz:
+                    #     overview_visuals(data)
     else:
         st.warning("Please select or upload a file.")
         
