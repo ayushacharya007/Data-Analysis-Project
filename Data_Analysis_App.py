@@ -192,7 +192,7 @@ def data_informations(data):
                                 # Display the figure in Streamlit
                                 st.pyplot(fig)
                             except ValueError as e:
-                                st.write(f"Could not generate word cloud for column '{col}': {str(e)}")
+                                st.info(f"Could not generate word cloud for column '{col}': {str(e)}")
 
                     # Datetime columns
                     elif col_type == 'datetime64[ns]':
@@ -202,7 +202,7 @@ def data_informations(data):
                         fig.update_xaxes(showgrid=False)
                         fig.update_yaxes(showgrid=False)
                         st.plotly_chart(fig)
-    return col,col_type
+    # return col,col_type
 
 # Function to show data overview
 def show_data_overview(data):
