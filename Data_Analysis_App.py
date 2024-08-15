@@ -41,43 +41,9 @@ st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
 selected_option = st.sidebar.radio('Select a file for analysis', ['Upload a new file'])
 
 def correct_data_types(data):
-    # Helper function to check if a string can be converted to a date
-    def is_date(string):
-        date_patterns = [
-            r'^\d{2}/\d{2}/\d{4}$',  # Matches '01/10/2023'
-            r'^\d{2}-\d{2}-\d{4}$',  # Matches '01-10-2023'
-            r'^\d{4}-\d{2}-\d{2}$',  # Matches '2023-10-01'
-            r'^\d{2}/\d{2}/\d{2}$',  # Matches '01/10/23'
-            r'^\d{2}-\d{2}-\d{2}$',  # Matches '01-10-23'
-            r'^\d{4}/\d{2}/\d{2}$',  # Matches '2023/10/01'
-            r'^\d{2} \w{3} \d{4}$',  # Matches '01 Oct 2023'
-            r'^\d{2} \w{3} \d{2}$'   # Matches '01 Oct 23'
-        ]
-        for pattern in date_patterns:
-            if re.match(pattern, string):
-                return True
-        return False
+    return data
+        
 
-    # Helper function to check if a string can be converted to a number
-    def is_number(string):
-        number_patterns = [
-            r'^\d{4}-\d{8}$',     # Matches '2023-00695531'
-            r'^\d{4}-\d{8}$',     # Matches '0001-34564256'
-            r'^\d{6},\d{2}$',     # Matches '226986,32'
-            r'^\d{7},\d{2}$',     # Matches '2367606,93'
-            r'^\d{1,3}(,\d{3})+$', # Matches '1,234', '1,234,567'
-            r'^\d+(\.\d+)?$',     # Matches '123', '123.45'
-            r'^\d+\,\d{2}$'       # Matches '123,45' (European format)
-        ]
-        # Ensure the input is a string
-        string = str(string)
-        # Remove delimiters for the numeric check
-        cleaned_string = string.replace(',', '').replace('-', '')
-        try:
-            float(cleaned_string)
-            return True
-        except ValueError:
-            return False
 
     # Function to convert column to the appropriate type
     def convert_column(series):
