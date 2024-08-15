@@ -27,6 +27,8 @@ import joblib
 import time
 import re
 import matplotlib.pyplot as plt
+from modelling.linear_regression import perform_linear_regression
+
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
 
