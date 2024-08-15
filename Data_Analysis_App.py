@@ -937,9 +937,6 @@ def model_building(data):
 
 
 
-# List all files in the 'data' folder
-data_folder = "data"
-files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f))]
 # Add file uploader and file selector to the sidebar
 if selected_option == 'Upload a new file':
     uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type=["csv", "xlsx"])
