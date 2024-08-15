@@ -113,8 +113,8 @@ def data_informations(data):
     with st.container():
         for col in data.columns:
             with st.container():
-                _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
-                with info:
+                _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3], vertical_alignment='center')
+                with infos:
                     st.markdown(f"<div class='info-box'><div class='info-column-title' style='text-align:left; margin-bottom:10px;'>{col}</div>", unsafe_allow_html=True)        
                     # Get the data type of the column
                     col_type = str(data[col].dtype)
@@ -204,10 +204,6 @@ def data_informations(data):
                         st.plotly_chart(fig)
     return col,col_type
 
-# def overview_visuals(data):
-#     for col in data.columns:
-        
-
 # Function to show data overview
 def show_data_overview(data):
     if data is not None:
@@ -251,19 +247,9 @@ def show_data_overview(data):
                                 st.markdown("<h5 style='color: dodgerblue;'>Alerts</h5>", unsafe_allow_html=True)
                                 alerts = generate_alerts(data)
                                 st.markdown(alerts, unsafe_allow_html=True)
-                # Create columns
-                # _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
 
-                # Iterate over each column
                 with st.container():
                     data_informations(data)
-                    # with infos:
-                    #     data_informations(data)
-                    #     # write st.write('') 1o times using loop
-                    #     for i in range(5):
-                    #         st.write('')
-                    # with viz:
-                    #     overview_visuals(data)
     else:
         st.warning("Please select or upload a file.")
         
@@ -271,7 +257,7 @@ def show_data_overview(data):
 def show_missing(data):
     if 'show_missing' not in st.session_state:
         st.session_state.show_missing = False
-    if st.button('Missing Values'):
+    if st.button('Missing Values', use_container_width=True):
         st.session_state.show_missing = not st.session_state.show_missing
 
     if st.session_state.show_missing:
@@ -286,7 +272,7 @@ def drop_columns(data):
     if st.session_state.show_missing:
         if 'columns_dropped' not in st.session_state:
             st.session_state.columns_dropped = False
-        if st.button('Drop Columns'):
+        if st.button('Drop Columns', use_container_width=True):
             st.session_state.columns_dropped = not st.session_state.columns_dropped
 
         if st.session_state.columns_dropped:
@@ -360,7 +346,7 @@ def encode_data(data):
         if 'encoded_data' not in st.session_state:
             st.session_state.encoded_data = False
 
-        if st.button('Encoding'):
+        if st.button('Encoding', use_container_width=True):
             st.session_state.encoded_data = not st.session_state.encoded_data
 
         if st.session_state.encoded_data:
