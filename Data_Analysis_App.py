@@ -27,6 +27,8 @@ import joblib
 import time
 import re
 import matplotlib.pyplot as plt
+from modelling.linear_regression import perform_linear_regression
+
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
 
@@ -111,7 +113,7 @@ def data_informations(data):
     with st.container():
         for col in data.columns:
             with st.container():
-                info, viz = st.columns([2, 2])
+                _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
                 with info:
                     st.markdown(f"<div class='info-box'><div class='info-column-title' style='text-align:left; margin-bottom:10px;'>{col}</div>", unsafe_allow_html=True)        
                     # Get the data type of the column
@@ -202,6 +204,9 @@ def data_informations(data):
                         st.plotly_chart(fig)
     return col,col_type
 
+# def overview_visuals(data):
+#     for col in data.columns:
+        
 
 # Function to show data overview
 def show_data_overview(data):
@@ -229,7 +234,7 @@ def show_data_overview(data):
                             statistics(data)
                             
                         with type:
-                            data_types(data)
+                            correct_data_types(data)
                     st.write('')
                     st.write('')
 
@@ -247,12 +252,18 @@ def show_data_overview(data):
                                 alerts = generate_alerts(data)
                                 st.markdown(alerts, unsafe_allow_html=True)
                 # Create columns
-                _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
+                # _,infos, _, viz,_ = st.columns([0.3,2.5, 0.5, 2,0.3])
 
                 # Iterate over each column
                 with st.container():
                     data_informations(data)
-
+                    # with infos:
+                    #     data_informations(data)
+                    #     # write st.write('') 1o times using loop
+                    #     for i in range(5):
+                    #         st.write('')
+                    # with viz:
+                    #     overview_visuals(data)
     else:
         st.warning("Please select or upload a file.")
         
