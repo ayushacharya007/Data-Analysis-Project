@@ -273,12 +273,14 @@ def show_missing(data):
         missing_info = pd.DataFrame({'Missing Values': missing_values, 'Percentage %': missing_percentage})
         st.write(missing_info)
 
+# create 3 column for buttons to drop columns, handle missing values and encoding
+drop, missing, encode = st.columns(3)
 
 def drop_columns(data):
     if st.session_state.show_missing:
         if 'columns_dropped' not in st.session_state:
             st.session_state.columns_dropped = False
-        if st.button('Drop Columns', use_container_width=True):
+        if drop.button('Drop Columns', use_container_width=True):
             st.session_state.columns_dropped = not st.session_state.columns_dropped
 
         if st.session_state.columns_dropped:
@@ -294,65 +296,72 @@ def drop_columns(data):
 
 def handle_nulls(data):
     if st.session_state.show_missing:
-        handle_missing_values = st.selectbox('Select methods to handel null values', ['None', 'Drop the data', 'Input missing data', 'Replace values'])
-        st.write(f'You have selected: :red[{handle_missing_values}]')
-        if handle_missing_values == 'None':
-            pass
+        if "handle missing values" not in st.session_state:
+            st.session_state.handle_missing_values = False
+        if drop.button('Handle Missing Values', use_container_width=True):
+            st.session_state.handle_missing_values = not st.session_state.handle_missing_values
 
-        elif handle_missing_values == 'Drop the data':
-            null_counts = data.isnull().sum()
-            columns_with_nulls = null_counts[null_counts > 0]
-            data = data.dropna()
-            st.success(f'Rows with null values have been removed successfully from columns [{columns_with_nulls}].')
-            data
-            # show the remaining length of the data frame
-            st.info(f'The length of the data frame is {len(data)} after removing the nulls.')
+        if st.session_state.handle_missing_values:
 
-        elif handle_missing_values == 'Input missing data':
-            # let user to choose how many columns they want tyo select to imput the data using slider
-            st.write('Select the number of columns you want to input the missing data')
-            num_columns = st.slider('Number of columns', 1, len(data.columns))
-            for i in range(num_columns):
-                col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
-                if data[col_name].isnull().any():
-                    user_input = st.text_input(f'Enter value for column ({col_name}):', key=f'input_{i}')
-                    data[col_name] = data[col_name].fillna(user_input)
-                else:
-                    st.warning(f'No Null Values to write in "{col_name}".')
-            data
+            handle_missing_values = st.selectbox(':blue[Select methods to handel null values]:', ['None', 'Drop the data', 'Input missing data', 'Replace values'])
+            st.write(f'You have selected: :red[{handle_missing_values}]')
+            if handle_missing_values == 'None':
+                pass
 
-        elif handle_missing_values == 'Replace values':
-            # let user to choose which column they want to replace the values using mean, mode and median
-            st.info('Only use mean and medain with numerical data type.')
-            selected_method = st.radio('Select any one method:', ['Mean', 'Mode', 'Median'])
-            num_columns = st.slider('Number of columns', 1, len(data.columns))
+            elif handle_missing_values == 'Drop the data':
+                null_counts = data.isnull().sum()
+                columns_with_nulls = null_counts[null_counts > 0]
+                data = data.dropna()
+                st.success(f'Rows with null values have been removed successfully from columns [{columns_with_nulls}].')
+                data
+                # show the remaining length of the data frame
+                st.info(f'The length of the data frame is {len(data)} after removing the nulls.')
 
-            for i in range(num_columns):
-                col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
-                if data[col_name].isnull().any():
-                    if selected_method == 'Mean':
-                        mean = data[col_name].mean()
-                        st.write(f'The mean for the :red[{col_name}] column is :blue[{mean}].')
-                        data[col_name] = data[col_name].fillna(mean)
-                    elif selected_method == 'Mode':
-                        mode = data[col_name].mode()[0]
-                        st.write(f'The mode for the :red[{col_name}] column is :blue[{mode}].')
-                        data[col_name] = data[col_name].fillna(mode)
-                    elif selected_method == 'Median':
-                        median = data[col_name].median()
-                        st.median(f'The mean for the :red[{col_name}] column is :blue[{median}].')
-                        data[col_name] = data[col_name].fillna(median)
-                else:
-                    st.warning(f'No Null Values to write in "{col_name}".')
-            data
-    return data
+            elif handle_missing_values == 'Input missing data':
+                # let user to choose how many columns they want tyo select to imput the data using slider
+                st.write('Select the number of columns you want to input the missing data')
+                num_columns = st.slider('Number of columns', 1, len(data.columns))
+                for i in range(num_columns):
+                    col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
+                    if data[col_name].isnull().any():
+                        user_input = st.text_input(f'Enter value for column ({col_name}):', key=f'input_{i}')
+                        data[col_name] = data[col_name].fillna(user_input)
+                    else:
+                        st.warning(f'No Null Values to write in "{col_name}".')
+                data
+
+            elif handle_missing_values == 'Replace values':
+                # let user to choose which column they want to replace the values using mean, mode and median
+                st.info('Only use mean and medain with numerical data type.')
+                selected_method = st.radio('Select any one method:', ['Mean', 'Mode', 'Median'])
+                num_columns = st.slider('Number of columns', 1, len(data.columns))
+
+                for i in range(num_columns):
+                    col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
+                    if data[col_name].isnull().any():
+                        if selected_method == 'Mean':
+                            mean = data[col_name].mean()
+                            st.write(f'The mean for the :red[{col_name}] column is :blue[{mean}].')
+                            data[col_name] = data[col_name].fillna(mean)
+                        elif selected_method == 'Mode':
+                            mode = data[col_name].mode()[0]
+                            st.write(f'The mode for the :red[{col_name}] column is :blue[{mode}].')
+                            data[col_name] = data[col_name].fillna(mode)
+                        elif selected_method == 'Median':
+                            median = data[col_name].median()
+                            st.median(f'The mean for the :red[{col_name}] column is :blue[{median}].')
+                            data[col_name] = data[col_name].fillna(median)
+                    else:
+                        st.warning(f'No Null Values to write in "{col_name}".')
+                data
+        return data
 
 def encode_data(data):
     if st.session_state.show_missing:
         if 'encoded_data' not in st.session_state:
             st.session_state.encoded_data = False
 
-        if st.button('Encoding', use_container_width=True):
+        if drop.button('Encoding', use_container_width=True):
             st.session_state.encoded_data = not st.session_state.encoded_data
 
         if st.session_state.encoded_data:
