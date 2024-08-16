@@ -294,88 +294,95 @@ def drop_columns(data):
 
 def handle_nulls(data):
     if st.session_state.show_missing:
-        handle_missing_values = st.selectbox('Select methods to handel null values', ['None', 'Drop the data', 'Input missing data', 'Replace values'])
-        st.write(f'You have selected: :red[{handle_missing_values}]')
-        if handle_missing_values == 'None':
-            pass
-
-        elif handle_missing_values == 'Drop the data':
-            null_counts = data.isnull().sum()
-            columns_with_nulls = null_counts[null_counts > 0]
-            data = data.dropna()
-            st.success(f'Rows with null values have been removed successfully from columns [{columns_with_nulls}].')
-            data
-            # show the remaining length of the data frame
-            st.info(f'The length of the data frame is {len(data)} after removing the nulls.')
-
-        elif handle_missing_values == 'Input missing data':
-            # let user to choose how many columns they want tyo select to imput the data using slider
-            st.write('Select the number of columns you want to input the missing data')
-            num_columns = st.slider('Number of columns', 1, len(data.columns))
-            for i in range(num_columns):
-                col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
-                if data[col_name].isnull().any():
-                    user_input = st.text_input(f'Enter value for column ({col_name}):', key=f'input_{i}')
-                    data[col_name] = data[col_name].fillna(user_input)
-                else:
-                    st.warning(f'No Null Values to write in "{col_name}".')
-            data
-
-        elif handle_missing_values == 'Replace values':
-            # let user to choose which column they want to replace the values using mean, mode and median
-            st.info('Only use mean and medain with numerical data type.')
-            selected_method = st.radio('Select any one method:', ['Mean', 'Mode', 'Median'])
-            num_columns = st.slider('Number of columns', 1, len(data.columns))
-
-            for i in range(num_columns):
-                col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
-                if data[col_name].isnull().any():
-                    if selected_method == 'Mean':
-                        mean = data[col_name].mean()
-                        st.write(f'The mean for the :red[{col_name}] column is :blue[{mean}].')
-                        data[col_name] = data[col_name].fillna(mean)
-                    elif selected_method == 'Mode':
-                        mode = data[col_name].mode()[0]
-                        st.write(f'The mode for the :red[{col_name}] column is :blue[{mode}].')
-                        data[col_name] = data[col_name].fillna(mode)
-                    elif selected_method == 'Median':
-                        median = data[col_name].median()
-                        st.median(f'The mean for the :red[{col_name}] column is :blue[{median}].')
-                        data[col_name] = data[col_name].fillna(median)
-                else:
-                    st.warning(f'No Null Values to write in "{col_name}".')
-            data
-    return data
-
-def encode_data(data):
-    if st.session_state.show_missing:
-        if 'encoded_data' not in st.session_state:
-            st.session_state.encoded_data = False
+        if 'handle_missing' not in st.session_state:
+            st.session_state.handle_missing = False
 
         if st.button('Encoding', use_container_width=True):
-            st.session_state.encoded_data = not st.session_state.encoded_data
+            st.session_state.handle_missing = not st.session_state.handle_missing
 
-        if st.session_state.encoded_data:
-            st.write('Select the columns you want to encode')
-            selected_columns = st.multiselect('Columns', data.columns, key='encoding')
-            st.write('Selected Columns:')
-            selected_columns
-            encoding_type = st.selectbox('Select encoding type', ['One-Hot Encoding', 'Label Encoding'])
-            if encoding_type == 'One-Hot Encoding':
-                data = pd.get_dummies(data, columns=selected_columns)
-            elif encoding_type == 'Label Encoding':
-                for col in selected_columns:
-                    le = LabelEncoder()
-                    data[col] = le.fit_transform(data[col])
-            st.write(data)
+        if st.session_state.handle_missing:
+            handle_missing_values = st.selectbox('Select methods to handel null values', ['None', 'Drop the data', 'Input missing data', 'Replace values'])
+            st.write(f'You have selected: :red[{handle_missing_values}]')
+            if handle_missing_values == 'None':
+                pass
+
+            elif handle_missing_values == 'Drop the data':
+                null_counts = data.isnull().sum()
+                columns_with_nulls = null_counts[null_counts > 0]
+                data = data.dropna()
+                st.success(f'Rows with null values have been removed successfully from columns [{columns_with_nulls}].')
+                st.write(data)
+                # show the remaining length of the data frame
+                st.info(f'The length of the data frame is {len(data)} after removing the nulls.')
+
+            elif handle_missing_values == 'Input missing data':
+                # let user to choose how many columns they want tyo select to imput the data using slider
+                st.write('Select the number of columns you want to input the missing data')
+                num_columns = st.slider('Number of columns', 1, len(data.columns))
+                for i in range(num_columns):
+                    col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
+                    if data[col_name].isnull().any():
+                        user_input = st.text_input(f'Enter value for column ({col_name}):', key=f'input_{i}')
+                        data[col_name] = data[col_name].fillna(user_input)
+                    else:
+                        st.warning(f'No Null Values to write in "{col_name}".')
+                st.write(data)
+
+            elif handle_missing_values == 'Replace values':
+                # let user to choose which column they want to replace the values using mean, mode and median
+                st.info('Only use mean and medain with numerical data type.')
+                selected_method = st.radio('Select any one method:', ['Mean', 'Mode', 'Median'])
+                num_columns = st.slider('Number of columns', 1, len(data.columns))
+
+                for i in range(num_columns):
+                    col_name = st.selectbox(f'Select column {i+1}:', data.columns, key=f'col_{i}')
+                    if data[col_name].isnull().any():
+                        if selected_method == 'Mean':
+                            mean = data[col_name].mean()
+                            st.write(f'The mean for the :red[{col_name}] column is :blue[{mean}].')
+                            data[col_name] = data[col_name].fillna(mean)
+                        elif selected_method == 'Mode':
+                            mode = data[col_name].mode()[0]
+                            st.write(f'The mode for the :red[{col_name}] column is :blue[{mode}].')
+                            data[col_name] = data[col_name].fillna(mode)
+                        elif selected_method == 'Median':
+                            median = data[col_name].median()
+                            st.median(f'The mean for the :red[{col_name}] column is :blue[{median}].')
+                            data[col_name] = data[col_name].fillna(median)
+                    else:
+                        st.warning(f'No Null Values to write in "{col_name}".')
+                st.write(data)
     return data
+
+# def encode_data(data):
+#     if st.session_state.show_missing:
+#         if 'handle_missing' not in st.session_state:
+#             st.session_state.handle_missing = False
+
+#         if st.button('Encoding', use_container_width=True):
+#             st.session_state.handle_missing = not st.session_state.handle_missing
+
+#         if st.session_state.handle_missing:
+#             st.write('Select the columns you want to encode')
+#             selected_columns = st.multiselect('Columns', data.columns, key='encoding')
+#             st.write('Selected Columns:')
+#             selected_columns
+#             encoding_type = st.selectbox('Select encoding type', ['One-Hot Encoding', 'Label Encoding'])
+#             if encoding_type == 'One-Hot Encoding':
+#                 data = pd.get_dummies(data, columns=selected_columns)
+#             elif encoding_type == 'Label Encoding':
+#                 for col in selected_columns:
+#                     le = LabelEncoder()
+#                     data[col] = le.fit_transform(data[col])
+#             st.write(data)
+#     return data
 
 def missing_values(data):
     show_missing(data)
 
     data = drop_columns(data)
     data = handle_nulls(data)
-    data = encode_data(data)
+    # data = encode_data(data)
     return data
 
 def check_duplicates(data):
@@ -427,19 +434,22 @@ def duplicated_values(data):
     data = remove_duplicates(data)
     return data
 
-# Modify the download_cleaned_data function to check for None
-def download_cleaned_data(data):
-    data= missing_values(data)
-    data = duplicated_values(data)
-    st.write("")
+def display_and_download_cleaned_data(data):
     if data is not None:
-        # Convert DataFrame to CSV, then encode to UTF-8 bytes
-        csv = data.to_csv(index=False).encode('utf-8')
-        return csv
+        st.header('Data Cleaning')
+        
+        # Apply data cleaning steps
+        data = missing_values(data)
+        data = duplicated_values(data)
+        
+        if data is not None:
+            # Convert DataFrame to CSV, then encode to UTF-8 bytes
+            csv = data.to_csv(index=False).encode('utf-8')
+            st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
+        else:
+            st.warning("Data is not available for download.")
     else:
-        # Handle the case where data is None
-        print("No data available to download.")
-        return None
+        st.warning("Please select or upload a file.")
 
 def display_dataset(data):
     st.header('Dataset:')
@@ -875,20 +885,9 @@ tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizati
 with tab1:
     st.write('')
     show_data_overview(data)
-def display_cleaning_methods(data):
-    # Call the function to download data, ensuring data is not None
-    if data is not None:
-        st.header('Data Cleaning')
-        csv_data = download_cleaned_data(data)
-        if csv_data is not None:        
-            st.download_button(label='Download Cleaned CSV', data=csv_data, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
-        else:
-            print("Data is not available for download.")
-    else:
-        st.warning("Please select or upload a file.")
 
 with tab2:
-    display_cleaning_methods(data)
+    display_and_download_cleaned_data(data)
 
 with tab3:
     display_visualizations(data)
