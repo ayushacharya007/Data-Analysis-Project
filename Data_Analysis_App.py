@@ -43,23 +43,7 @@ st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
 # Create a sidebar radio button for file selection
 selected_option = st.sidebar.radio('Select a file for analysis', ['Upload a new file'])
 
-@st.cache_data
-# def correct_data_types(data):
-#     for col in data.columns:
-#         # Try to convert to datetime
-#         data[col] = pd.to_datetime(data[col])
-        
-#         # If the entire column is NaT (Not a Time), it means conversion to datetime failed
-#         if data[col].isna().all():
-#             # Try to convert to numeric
-#             data[col] = pd.to_numeric(data[col])
-            
-#             # If the entire column is NaN, it means conversion to numeric failed
-#             if data[col].isna().all():
-#                 # Convert to string
-#                 data[col] = data[col].astype(str)
-    
-#     return data
+
         
 @st.cache_data
 def load_data(file):
@@ -85,7 +69,60 @@ def load_data(file):
         except Exception as e:
             st.error(f'An error occurred: {str(e)}')
     return None
+
+def correct_data_types(data):
+    if data is not None:
+        conversion_successful = True
+        # Display data types
+        og_data_types = pd.DataFrame({
+            'Column ': data.columns,
+            'Data Types': [data[col].dtype for col in data.columns]
+        })
+
+        st.write(":blue[**Original Data Types**] :")
+        st.dataframe(og_data_types.style)
+
+        # let the user select the columns to convert 
+        columns = st.multiselect(':blue[**Select columns to convert**] :', data.columns)
+
+        if columns:
+            for column in columns:
+                data_type = st.selectbox(f':blue[**Select data type for column : :green[{column}]**]', ['None','int', 'float', 'object', 'datetime'])
+                if data_type != 'None':
+                    try:
+                        if data_type == 'int':
+                            data[column] = data[column].astype(int)
+                        elif data_type == 'float':
+                            data[column] = data[column].astype(float)
+                        elif data_type == 'object':
+                            data[column] = data[column].astype(str)
+                        elif data_type == 'datetime':
+                            data[column] = pd.to_datetime(data[column], errors='coerce')
+                    except Exception as e:
+                        conversion_successful = False
+                        st.error(f"**Error converting column :blue[{column}] to :green[{data_type}]** :")
+
+            if conversion_successful:
+                # Create a DataFrame to show original and new data types
+                dtype_df = pd.DataFrame({
+                    'Column ': columns,
+                    'New DataType': [data[col].dtype for col in columns]
+                })
+
+                # Display the DataFrame in a tabular format
+                st.write(":blue[**Converted Data Types**] :")
+                st.dataframe(dtype_df)
             
+                with st.expander('**Show converted data**'):
+                    st.write(data)
+            
+                # # Save the modified data for other analysis
+                # st.session_state.modified_data = data
+        else:
+            st.warning('Please select columns to convert')
+    else:
+        st.warning('Please upload a file')
+
 # Function to generate alerts
 @st.cache_data
 def generate_alerts(data):
@@ -268,11 +305,23 @@ def show_data_overview(data):
                 st.write('')
 
                 with st.container():
-                    overview_tab, alerts_tab = st.tabs(["Overview", "Alerts"])
+                    fix_data_type, overview_tab, alerts_tab = st.tabs(["Fix Data Types", "Overview", "Alerts"])
+
+                    with fix_data_type:
+                        with st.container():
+                            correct_data_types(data)
+                        
+                    
                     with overview_tab:
                         st.write(':blue[**Data Overview**] :')  
                         with st.container():
                             data_informations(data)
+                        
+                        with st.container():
+                            for i in range(1):
+                                st.write('')
+                            st.write(':blue[**Columns Overview**] :')
+                            data_overview(data)
 
                     with alerts_tab:
                         st.write(':blue[**Data Alerts**] :')
@@ -283,11 +332,14 @@ def show_data_overview(data):
                                 # Generate alerts
                                     alerts = generate_alerts(data)
                                     st.markdown(alerts, unsafe_allow_html=True)
-                with st.container():
-                    for i in range(1):
-                        st.write('')
-                    st.write(':blue[**Columns Overview**] :')
-                    data_overview(data)
+                        with st.container():
+                            for i in range(1):
+                                st.write('')
+                            st.write(':blue[**Columns Overview**] :')
+                            data_overview(data)
+                
+
+                    
     else:
         st.warning("**Please select or upload a file.**")
         
@@ -302,8 +354,12 @@ def show_missing(data):
         # show the missing values and percentage in a dataframe
         missing_values = data.isnull().sum()
         missing_percentage = missing_values / data.shape[0] * 100
-        missing_info = pd.DataFrame({'Missing Values': missing_values, 'Percentage %': missing_percentage})
-        st.write(missing_info)
+        missing_info = pd.DataFrame({
+            'Missing Values': missing_values.values, 
+            'Percentage %': missing_percentage.values
+        }, index=data.columns)
+        missing_info.index.name = 'Columns'  # Set the index title
+        st.dataframe(missing_info)
 
 
 # def drop_columns(data):
@@ -349,6 +405,8 @@ def handle_nulls(data):
                     st.write(data)
                     # st.write(f':blue[**Dropped columns**] : :green[{", ".join(selected_columns)}]')
                     st.write(':green[**Selected columns dropped successfully.**]')
+                    # Update the dataset after dropping columns
+                    data = data.drop(selected_columns, axis=1)
                 # else:
                 #     st.info('No columns selected for dropping.')
 
