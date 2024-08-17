@@ -28,7 +28,12 @@ import time
 import re
 import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
-# from modelling.linear_regression import perform_linear_regression
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+from sklearn.impute import SimpleImputer
+import nltk
+
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
@@ -40,39 +45,32 @@ with open("style.css") as f:
 # Center the page title using markdown
 st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
 
-# Create a sidebar radio button for file selection
-selected_option = st.sidebar.radio('Select a file for analysis', ['Upload a new file'])
-
-
-        
-@st.cache_data
+# @st.cache_data
 def load_data(file):
     if file is not None:
-        # try different encoding types to read the file and try csv as well as excel
         try:
             csv_encoding = ['utf-8', 'latin1', 'ISO-8859-1', 'cp1252']
             if file.name.endswith('.csv'):
-                # try all the encoding types to read the csv file
                 for encoding in csv_encoding:
                     try:
                         data = pd.read_csv(file, encoding=encoding)
-                        # data = correct_data_types(data)
-                        return data
+                        break
                     except Exception as e:
                         pass
             elif file.name.endswith('.xlsx'):
                 data = pd.read_excel(file)
-                # data = correct_data_types(data)
-                return data
             else:
-                st.error('Please upload a valid file. Only CSV and Excel files are allowed.')
+                st.error("Unsupported file format")
+                return None
         except Exception as e:
-            st.error(f'An error occurred: {str(e)}')
-    return None
+            st.error(f"Error loading file: {e}")
+            return None
+        return data
 
 def correct_data_types(data):
     if data is not None:
         conversion_successful = True
+
         # Display data types
         og_data_types = pd.DataFrame({
             'Column ': data.columns,
@@ -82,12 +80,12 @@ def correct_data_types(data):
         st.write(":blue[**Original Data Types**] :")
         st.dataframe(og_data_types.style)
 
-        # let the user select the columns to convert 
+        # Let the user select the columns to convert 
         columns = st.multiselect(':blue[**Select columns to convert**] :', data.columns)
 
         if columns:
             for column in columns:
-                data_type = st.selectbox(f':blue[**Select data type for column : :green[{column}]**]', ['None','int', 'float', 'object', 'datetime'])
+                data_type = st.selectbox(f':blue[**Select data type for column : :green[{column}]**]', ['None', 'int', 'float', 'object', 'datetime'], key=f'dtype_{column}')
                 if data_type != 'None':
                     try:
                         if data_type == 'int':
@@ -100,28 +98,27 @@ def correct_data_types(data):
                             data[column] = pd.to_datetime(data[column], errors='coerce')
                     except Exception as e:
                         conversion_successful = False
-                        st.error(f"**Error converting column :blue[{column}] to :green[{data_type}]** :")
-
-            if conversion_successful:
-                # Create a DataFrame to show original and new data types
-                dtype_df = pd.DataFrame({
-                    'Column ': columns,
-                    'New DataType': [data[col].dtype for col in columns]
-                })
-
-                # Display the DataFrame in a tabular format
-                st.write(":blue[**Converted Data Types**] :")
-                st.dataframe(dtype_df)
-            
-                with st.expander('**Show converted data**'):
-                    st.write(data)
-            
-                # # Save the modified data for other analysis
-                # st.session_state.modified_data = data
+                        st.error(f"Error converting column :blue[{column}] to :green[{data_type}]")
+                else:
+                    st.info('Please select data type to convert')
         else:
             st.warning('Please select columns to convert')
-    else:
-        st.warning('Please upload a file')
+
+        if conversion_successful and columns and data_type != 'None':
+            # Create a DataFrame to show original and new data types
+            dtype_df = pd.DataFrame({
+                'Column ': columns,
+                'New DataType': [data[col].dtype for col in columns]
+            })
+
+            # Display the DataFrame in a tabular format
+            st.write(":blue[**Converted Data Types**] :")
+            st.dataframe(dtype_df)
+        
+            with st.expander('**Show converted data**'):
+                st.write(data)
+
+    return data
 
 # Function to generate alerts
 @st.cache_data
@@ -275,7 +272,7 @@ def data_overview(data):
                                 # Display the figure in Streamlit
                                 st.pyplot(fig)
                             except ValueError as e:
-                                st.info(f"Could not generate word cloud for column '{col}': {str(e)}")
+                                st.error(f"Could not generate word cloud for column '{col}': {str(e)}")
 
                     # Datetime columns
                     elif col_type == 'datetime64[ns]':
@@ -285,7 +282,6 @@ def data_overview(data):
                         fig.update_xaxes(showgrid=False)
                         fig.update_yaxes(showgrid=False)
                         st.plotly_chart(fig)
-    return col,col_type
 
 # Function to show data overview
 def show_data_overview(data):
@@ -310,8 +306,7 @@ def show_data_overview(data):
                     with fix_data_type:
                         with st.container():
                             correct_data_types(data)
-                        
-                    
+
                     with overview_tab:
                         st.write(':blue[**Data Overview**] :')  
                         with st.container():
@@ -336,154 +331,158 @@ def show_data_overview(data):
                             for i in range(1):
                                 st.write('')
                             st.write(':blue[**Columns Overview**] :')
-                            data_overview(data)
-                
-
-                    
+                            data_overview(data)   
     else:
-        st.warning("**Please select or upload a file.**")
+        st.warning("Please select or upload a file.")
         
 
 def show_missing(data):
-    if 'show_missing' not in st.session_state:
-        st.session_state.show_missing = False
-    if st.button('Missing Values', use_container_width=True):
-        st.session_state.show_missing = not st.session_state.show_missing
-
-    if st.session_state.show_missing:
-        # show the missing values and percentage in a dataframe
-        missing_values = data.isnull().sum()
-        missing_percentage = missing_values / data.shape[0] * 100
-        missing_info = pd.DataFrame({
-            'Missing Values': missing_values.values, 
-            'Percentage %': missing_percentage.values
-        }, index=data.columns)
-        missing_info.index.name = 'Columns'  # Set the index title
-        st.dataframe(missing_info)
+    missing_values = data.isnull().sum()
+    missing_percentage = missing_values / data.shape[0] * 100
+    missing_info = pd.DataFrame({
+        'Missing Values': missing_values.values, 
+        'Percentage %': missing_percentage.values
+    }, index=data.columns)
+    missing_info.index.name = 'Columns'  # Set the index title
+    st.dataframe(missing_info)
+    st.write(':blue[**Select methods to handle null**] :')
 
 
-# def drop_columns(data):
-#     if st.session_state.show_missing:
-#         if 'columns_dropped' not in st.session_state:
-#             st.session_state.columns_dropped = False
-#         if st.button('Drop Columns', use_container_width=True):
-#             st.session_state.columns_dropped = not st.session_state.columns_dropped
+def drop_columns(data):
 
-#         if st.session_state.columns_dropped:
-#             # let the user choose which columns to drop
-#             # st.write('')
-#             selected_columns = st.multiselect('Select the columns you want to drop', data.columns)
-#             data = data.drop(selected_columns, axis=1)
-#             st.write(data)
+    if 'drop_columns' not in st.session_state:
+        st.session_state.drop_columns = False
+
+    if st.button('Drop the column'):
+        st.session_state.drop_columns = not st.session_state.drop_columns
+
+    if st.session_state.drop_columns:
+        selected_columns = st.multiselect(':blue[**Select the columns you want to drop**] :', data.columns)
+        if selected_columns:
+            data = data.drop(selected_columns, axis=1)
+            show_data.write(data)
+
+            st.success('Selected columns dropped successfully.')
+        else:
+            st.info('No columns selected for dropping.')
+    return data
+
+def drop_data(data):
+
+    if 'drop_data' not in st.session_state:
+        st.session_state.drop_data = False
+
+    if st.button('Drop the data'):
+        st.session_state.drop_data = not st.session_state.drop_data
+
+    if st.session_state.drop_data:
+        null_counts = data.isnull().sum()
+        columns_with_nulls = null_counts[null_counts > 0]
+        if columns_with_nulls.empty:
+            st.info('No null values to drop.')
+        else:
+            data = data.dropna()
+            show_data.write(data)
+            formatted_columns = ', '.join([f'{col} ({count})' for col, count in columns_with_nulls.items()])
+            st.success(f'Rows with null values have been removed successfully from columns: :blue[{formatted_columns}]')
+    return data
+
+# def fill_data(data):
+
+#     if 'fill_data' not in st.session_state:
+#         st.session_state.fill_data = False
+
+#     if st.button('Fill data'):
+#         st.session_state.fill_data = not st.session_state.fill_data
+
+#     if st.session_state.fill_data:
+#         # Let the user select the columns to fill
+#         columns = st.multiselect(':blue[**Select columns to fill**] :', data.columns)
+
+#         if columns:
+#             for column in columns:
+#                 if data[column].isnull().any():
+#                     user_input = st.text_input(label=f'Enter value for column {column}', key=f'input_{column}')
+#                     if user_input:
+#                         data_type = st.selectbox(f':blue[**Select data type for column : :green[{column}]**]', ['None', 'int', 'float', 'object', 'datetime'], key=f'dtype_{column}')
+#                         if data_type != 'None':
+#                             try:
+#                                 if data_type == 'int':
+#                                     data[column] = data[column].fillna(int(user_input)).astype(int)
+#                                 elif data_type == 'float':
+#                                     data[column] = data[column].fillna(float(user_input)).astype(float)
+#                                 elif data_type == 'object':
+#                                     data[column] = data[column].fillna(str(user_input)).astype(str)
+#                                 elif data_type == 'datetime':
+#                                     data[column] = data[column].fillna(pd.to_datetime(user_input, errors='coerce')).astype('datetime64[ns]')
+#                                 st.write(f'Missing values have been filled successfully in column: {column} with data type: {data_type}')
+#                             except Exception as e:
+#                                 st.error(f"Error converting column {column} to {data_type}: {e}")
+#                         else:
+#                             st.info('Please select a data type to convert')
+#                 else:
+#                     st.info(f'The column "{column}" does not have any null values.')
+
+#             show_data.write(data)
+#         else:
+#             st.warning('Please select columns to fill')
+
+#         st.write(data)
 #     return data
 
+def replace_values(data):
+    if 'replace_data' not in st.session_state:
+        st.session_state.replace_data = False
 
-def handle_nulls(data):
-    if st.session_state.show_missing:
-        if 'handle_missing' not in st.session_state:
-            st.session_state.handle_missing = False
+    if st.button('Replace values'):
+        st.session_state.replace_data = not st.session_state.replace_data
 
-        if st.button('Handle Missing', use_container_width=False):
-            st.session_state.handle_missing = not st.session_state.handle_missing
-        for i in range(1):
-            st.write('') 
-        
+    if st.session_state.replace_data:
+        st.info('Only use mean and median with numerical data type.')
+        columns = st.multiselect(':blue[**Select columns to fill**] :', data.columns)
 
-        if st.session_state.handle_missing:
-            handle_missing_values = st.selectbox(':blue[**Select methods to handel null values**] :', ['None', 'Drop the column','Drop the data', 'Input missing data', 'Replace values'])
+        if columns:
+            for column in columns:
+                selected_method = st.selectbox(f':blue[**Select filling method for column**] : :green[{column}]', ['None', 'Mean', 'Mode', 'Median', 'Custom Value'], key=f'method_{column}')
 
-            for i in range(1):
-                st.write('') 
-            # st.write(f'You have selected: :red[{handle_missing_values}]')
-            if handle_missing_values == 'None':
-                pass
-
-            elif handle_missing_values == 'Drop the column':
-                selected_columns = st.multiselect(':blue[**Select the columns you want to drop**] :', data.columns)
-                if selected_columns:
-                    data = data.drop(selected_columns, axis=1)
-                    st.write(data)
-                    # st.write(f':blue[**Dropped columns**] : :green[{", ".join(selected_columns)}]')
-                    st.write(':green[**Selected columns dropped successfully.**]')
-                    # Update the dataset after dropping columns
-                    data = data.drop(selected_columns, axis=1)
-                # else:
-                #     st.info('No columns selected for dropping.')
-
-            elif handle_missing_values == 'Drop the data':
-                null_counts = data.isnull().sum()
-                columns_with_nulls = null_counts[null_counts > 0]
-                data = data.dropna()
-                
-                # Format the columns with null counts
-                formatted_columns = ', '.join([f'{col} ({count})' for col, count in columns_with_nulls.items()])
-                data
-                # Show the remaining length of the data frame
-                st.write(f':green[**Rows with null values have been removed successfully from columns**] : :blue[{formatted_columns}].')
-
-            elif handle_missing_values == 'Input missing data':
-                # Separate the slider from the container
-                num_columns = st.slider(':blue[**Number of columns**] :', 1, len(data.columns))
-
-                for i in range(num_columns):
-                    # Ensure data.columns is converted to a list before concatenation
-                    columns_with_none = ["None"] + list(data.columns)
-
-                    # Create the selectbox with "None" as the default selection
-                    col_name = st.selectbox(f':blue[**Select column {i+1}**] :', columns_with_none, index=0, key=f'col_{i}')
-
-                    # Check if a column is selected and handle missing values
-                    if col_name == "None":
-                        st.info("**Select proper columns to fill the values.**")
-                    else:
-                        if data[col_name].isnull().any():
-                            user_input = st.text_input(label=f'**Enter value for column : :blue[{col_name}]**', key=f'input_{i}')
-                            if user_input:
-                                data[col_name] = data[col_name].fillna(user_input)
-                                st.write(f':green[**Missing values have been filled successfully in column**] : :blue[{col_name}]')
-                        else:
-                            st.info(f'The column ":green[{col_name}]" does not have any null values.')
-
-                # Display the updated dataset
-                st.write(data)
-
-            elif handle_missing_values == 'Replace values':
-                # let user to choose which column they want to replace the values using mean, mode and median
-                st.info('Only use mean and median with numerical data type.')
-                selected_method = st.radio(':blue[**Select any one method**] :', ['Mean', 'Mode', 'Median'])
-                num_columns = st.slider(':blue[**Number of columns**] :', 1, len(data.columns))
-
-                for i in range(num_columns):
-                    columns_with_none = ["None"] + list(data.columns)
-                    col_name = st.selectbox(f':blue[**Select column {i+1}**] :', columns_with_none, key=f'col_{i}')
-                    if  col_name == "None":
-                        st.info("**Select proper columns to fill the values.**")
-
-                    elif data[col_name].isnull().any():
+                if selected_method == 'None':
+                    st.warning(f'Please select a filling method for column :blue[{column}]')
+                elif data[column].isnull().any():
+                    if selected_method == 'Custom Value':
+                        user_input = st.text_input(label=f':blue[**Enter value for column**] : :green[{column}]', key=f'input_{column}')
+                        if user_input:
+                            try:
+                                data[column] = data[column].fillna(user_input)
+                                st.success(f'Missing values have been filled successfully in column ":blue[{column}]"')
+                            except Exception as e:
+                                st.error(f'Error converting column ":blue[{column}]" to ":green[{data[column].dtype}]": {e}')
+                    elif selected_method in ['Mean', 'Mode', 'Median']:
                         try:
                             if selected_method == 'Mean':
-                                if data[col_name].dtype in ['int64', 'float64']:
-                                    mean = data[col_name].mean()
-                                    st.write(f'**The mean for the :green[{col_name}] column is :blue[{mean}].**')
-                                    data[col_name] = data[col_name].fillna(mean)
+                                if data[column].dtype in ['int64', 'float64']:
+                                    mean = data[column].mean()
+                                    st.write(f'**The mean for the ":blue[{column}]" column is :green[{mean}]**.')
+                                    data[column] = data[column].fillna(mean)
                                 else:
-                                    st.error(f'**Cannot calculate mean for column ":blue[{col_name}]" with data type {data[col_name].dtype}.**')
+                                    st.error(f'Cannot calculate mean for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
                             elif selected_method == 'Mode':
-                                mode = data[col_name].mode()[0]
-                                st.write(f'**The mode for the :green[{col_name}] column is :blue[{mode}].**')
-                                data[col_name] = data[col_name].fillna(mode)
+                                mode = data[column].mode()[0]
+                                st.write(f'The mode for the ":blue[{column}]" column is :green[{mode}].')
+                                data[column] = data[column].fillna(mode)
                             elif selected_method == 'Median':
-                                if data[col_name].dtype in ['int64', 'float64']:
-                                    median = data[col_name].median()
-                                    st.write(f'**The median for the :green[{col_name}] column is :blue[{median}].**')
-                                    data[col_name] = data[col_name].fillna(median)
+                                if data[column].dtype in ['int64', 'float64']:
+                                    median = data[column].median()
+                                    st.write(f'The median for the ":blue[{column}]" column is :green[{median}].')
+                                    data[column] = data[column].fillna(median)
                                 else:
-                                    st.error(f'**Cannot calculate median for column "{col_name}" with {data[col_name].dtype} data type.**')
+                                    st.error(f'Cannot calculate median for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
                         except Exception as e:
-                            st.error(f'**An error occurred: {e}**')
-                    else:
-                        st.warning(f'**No Null Values to write in "{col_name}".**')    
-                st.write(data)
+                            st.error(f'An error occurred: {e}')
+                else:
+                    st.warning('No Null Values to write in ":blue[{column}]"')    
+            show_data.write(data)
+        else:
+            st.warning('Please select columns to fill')
     return data
 
 # def encode_data(data):
@@ -511,87 +510,82 @@ def handle_nulls(data):
 
 def missing_values(data):
     show_missing(data)
-    data = handle_nulls(data)
+    data = drop_columns(data)
+    data=drop_data(data)
+    data=replace_values(data)
     # data = encode_data(data)
     return data
 
 def check_duplicates(data):
-    if 'duplicated' not in st.session_state:
-        st.session_state.duplicated = False
+    # count the total duplicated rows
+    duplicated_rows = data.duplicated().sum()
+    st.write(f':blue[**Total duplicated rows**] : :green[{duplicated_rows}]')
+    # show the duplicated rows
+    duplicated_rows = data[data.duplicated(keep=False)]
+    duplicated_rows_sorted = duplicated_rows.sort_values(by=data.columns.tolist())
+    st.write(duplicated_rows_sorted)
+    st.write('')
+    selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
 
-    if st.button('Check Duplicate Values', use_container_width=True):
-        st.session_state.duplicated = not st.session_state.duplicated
+    if selected_columns:  # Ensure there's at least one column selected
+        # Adjusted to include keep=False to mark all duplicates as True
+        duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
+        # Join the selected_columns list into a string separated by commas
+        columns_str = ', '.join(selected_columns)
+        st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
+        # Adjusted to include keep=False to get all duplicated rows
+        duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
+        # Sort the duplicated rows by the selected columns to display them one above the other
+        duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
+        # Display only the selected columns
+        st.write(duplicated_rows_sorted[selected_columns])
+    else:
+        st.info('Please select columns to check for duplicated values.')
 
-    if st.session_state.duplicated:
-        # count the total duplicated rows
-        duplicated_rows = data.duplicated().sum()
-        st.write(f'Total duplicated rows: :green[{duplicated_rows}]')
-        # show the duplicated rows
-        duplicated_rows = data[data.duplicated(keep=False)]
-        duplicated_rows_sorted = duplicated_rows.sort_values(by=data.columns.tolist())
-        st.write(duplicated_rows_sorted)
-        st.write('')
-        selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
 
-        if selected_columns:  # Ensure there's at least one column selected
-            # Adjusted to include keep=False to mark all duplicates as True
-            duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
-            # Join the selected_columns list into a string separated by commas
-            columns_str = ', '.join(selected_columns)
-            st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
-            # Adjusted to include keep=False to get all duplicated rows
-            duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
-            # Sort the duplicated rows by the selected columns to display them one above the other
-            duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
-            # Display only the selected columns
-            st.write(duplicated_rows_sorted[selected_columns])
-
-        st.write(':blue[**Select method to remove duplicates**] :')
+    st.write(':blue[**Select method to remove duplicates**] :')
     
     return data
 
 def remove_duplicates_whole(data):
-    
-    if st.session_state.duplicated:
-    # create a button to remove the duplicated rows
-        if 'remove_duplicates_whole' not in st.session_state:
-            st.session_state.remove_duplicates_whole = False
 
-        if st.button('Remove Duplicates for Whole Data'):
-            st.session_state.remove_duplicates_whole = not st.session_state.remove_duplicates_whole
+# create a button to remove the duplicated rows
+    if 'remove_duplicates_whole' not in st.session_state:
+        st.session_state.remove_duplicates_whole = False
 
-        if st.session_state.remove_duplicates_whole:
-            # check if there are duplicated rows
-            if data.duplicated().any():
-                # remove the duplicated rows
-                data = data.drop_duplicates()
-                data
-                st.info(f'**Duplicates have been removed successfully. The length of the data frame is :green[{len(data)}] after removing the duplicates.**')
-            else:
-                st.info('**No duplicated values to remove.**')
+    if st.button('Remove Duplicates (Whole)'):
+        st.session_state.remove_duplicates_whole = not st.session_state.remove_duplicates_whole
+
+    if st.session_state.remove_duplicates_whole:
+        # check if there are duplicated rows
+        if data.duplicated().any():
+            # remove the duplicated rows
+            data = data.drop_duplicates().reset_index(drop=True)
+            show_data.write(data)
+            st.info(f'Duplicates have been removed successfully. The length of the data frame is :green[{len(data)}] after removing the duplicates.')
+        else:
+            st.info('No duplicated values to remove.')
     return data
 
 def remove_duplicates_selected(data):
-    if st.session_state.duplicated:
-        if 'remove_duplicates_selected' not in st.session_state:
-                st.session_state.remove_duplicates_selected = False
+    if 'remove_duplicates_selected' not in st.session_state:
+            st.session_state.remove_duplicates_selected = False
 
-        if st.button('Remove Duplicates for Selected Columns'):
-            st.session_state.remove_duplicates_selected = not st.session_state.remove_duplicates_selected
+    if st.button('Remove Duplicates (Selected Columns)'):
+        st.session_state.remove_duplicates_selected = not st.session_state.remove_duplicates_selected
 
-        if st.session_state.remove_duplicates_selected:
-            # check if there are duplicated rows based on selected columns
-            selected_columns = st.multiselect(':blue[**Select the columns to remove duplicates**] :', data.columns)
-            if selected_columns:
-                if data.duplicated(subset=selected_columns).any():
-                    # remove the duplicated rows based on selected columns
-                    data = data.drop_duplicates(subset=selected_columns)
-                    st.write(data)
-                    st.info(f'**Duplicates have been removed successfully for selected columns. The length of the data frame is :green[{len(data)}] after removing the duplicates for selected columns.**')
-                else:
-                    st.info('**No duplicated values to remove for selected columns.**')
+    if st.session_state.remove_duplicates_selected:
+        # check if there are duplicated rows based on selected columns
+        selected_columns = st.multiselect(':blue[**Select the columns to remove duplicates**] :', data.columns)
+        if selected_columns:
+            if data.duplicated(subset=selected_columns).any():
+                # remove the duplicated rows based on selected columns
+                data = data.drop_duplicates(subset=selected_columns).reset_index(drop=True)
+                show_data.write(data)
+                st.info(f'Duplicates have been removed successfully for selected columns. The length of the data frame is :green[{len(data)}] after removing the duplicates for selected columns.')
             else:
-                st.warning('**Please select at least one column to check for duplicates.**')
+                st.info('No duplicated values to remove for selected columns.')
+                
     return data
 
 
@@ -604,36 +598,33 @@ def duplicated_values(data):
 def display_and_download_cleaned_data(data):
     if data is not None:
         # Apply data cleaning steps
-        data = missing_values(data)
-        data = duplicated_values(data)
+        missing, duplicated, download_csv=st.tabs(['Missing Values', 'Duplicated Values', 'Download Cleaned Data'])
+        with missing:  
+            data = missing_values(data)
         
-        if data is not None:
-            # Convert DataFrame to CSV, then encode to UTF-8 bytes
-            csv = data.to_csv(index=False).encode('utf-8')
-            download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
-            if download:
-                # write a message to the user when the data is downloaded
-                st.write(':green[**Downladed the cleaned data successfully.**]')
-        else:
-            st.warning("**Data is not available for download.**")
+        with duplicated:
+            data = duplicated_values(data)
+        
+        with download_csv:
+            if data is not None:
+                # Convert DataFrame to CSV, then encode to UTF-8 bytes
+                csv = data.to_csv(index=False).encode('utf-8')
+                download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
+                if download:
+                    # write a message to the user when the data is downloaded
+                    st.write(':green[**Downladed the cleaned data successfully.**]')
+            else:
+                st.warning("Data is not available for download.")
     else:
         st.warning("Please select or upload a file.")
 
-def display_dataset(data):
-    st.header('Dataset:')
-    st.write(data)
-
-def display_columns(data):
-    if data is not None:
-        st.write('Columns in the dataset:')
-        st.write(data.columns.to_list())
-    else:
-        st.warning("No data available to display columns.")
 
 @st.cache_data
-def get_available_plot_types(x_dtype, y_dtype):
+def get_available_plot_types(x_dtype, y_dtype, x_axis, y_axis):
     # Check if both x and y are the same column
-    if x_dtype in ['float64', 'int64'] and y_dtype in ['float64', 'int64']:
+    if x_axis == y_axis:
+        return ['Count Plot']
+    elif x_dtype in ['float64', 'int64'] and y_dtype in ['float64', 'int64']:
         return ['Scatter Plot', 'Line Graph', 'Heat Map', 'Bubble Chart']
     elif (x_dtype in ['float64', 'int64'] and y_dtype == object) or (x_dtype == object and y_dtype in ['float64', 'int64']):
         return ['Bar Chart (Sum)', 'Bar Chart (Average)', 'Bar Chart (Count Distinct)', 'Stacked Bar Chart', 'Box Plot', 'Pie Chart']
@@ -642,7 +633,7 @@ def get_available_plot_types(x_dtype, y_dtype):
     elif (x_dtype == 'datetime64[ns]' and y_dtype == 'object') or (x_dtype == 'object' and y_dtype == 'datetime64[ns]'):
         return ['Line Chart (Count Distinct)']
     elif x_dtype == object and y_dtype == object:
-        return ['Pie Chart(Count)', 'Bar Chart', 'Stacked Bar Chart', 'Count Plot']
+        return ['Pie Chart(Count)', 'Stacked Bar Chart', 'Count Plot']
     else:
         return ['None']
     
@@ -659,23 +650,25 @@ def create_visualization(data, x_axis, y_axis, plot_type):
         fig = px.scatter(data, x=x_axis, y=y_axis)
     elif plot_type == 'Bar Chart (Sum)':
         if data[x_axis].dtype in ['float64', 'int64']:
-            fig = px.bar(data.groupby(y_axis)[x_axis].sum().reset_index(), x=y_axis, y=x_axis)
+            fig = px.bar(data.groupby(y_axis)[x_axis].sum().reset_index(), x=y_axis, y=x_axis, color=y_axis, barmode='group')
         else:
-            fig = px.bar(data.groupby(x_axis)[y_axis].sum().reset_index(), x=x_axis, y=y_axis)
+            fig = px.bar(data.groupby(x_axis)[y_axis].sum().reset_index(), x=x_axis, y=y_axis, color=x_axis, barmode='group')
+        fig.update_layout(barmode='group', xaxis={'categoryorder':'total descending'})
     elif plot_type == 'Bar Chart (Average)':
         if data[x_axis].dtype in ['float64', 'int64']:
-            fig = px.bar(data.groupby(y_axis)[x_axis].mean().reset_index(), x=y_axis, y=x_axis)
+            fig = px.bar(data.groupby(y_axis)[x_axis].mean().reset_index(), x=y_axis, y=x_axis, color=y_axis, barmode='group')
         else:
-            fig = px.bar(data.groupby(x_axis)[y_axis].mean().reset_index(), x=x_axis, y=y_axis)
+            fig = px.bar(data.groupby(x_axis)[y_axis].mean().reset_index(), x=x_axis, y=y_axis, color=x_axis, barmode='group')
+        fig.update_layout(barmode='group', xaxis={'categoryorder':'total descending'})
     elif plot_type == 'Bar Chart (Count Distinct)':
         if data[x_axis].dtype in ['float64', 'int64']:
-            fig = px.bar(data.groupby(y_axis)[x_axis].nunique().reset_index(), x=y_axis, y=x_axis)
+            fig = px.bar(data.groupby(y_axis)[x_axis].nunique().reset_index(), x=y_axis, y=x_axis, color=y_axis, barmode='group')
         else:
-            fig = px.bar(data.groupby(x_axis)[y_axis].nunique().reset_index(), x=x_axis, y=y_axis)
+            fig = px.bar(data.groupby(x_axis)[y_axis].nunique().reset_index(), x=x_axis, y=y_axis, color=x_axis, barmode='group')
+        fig.update_layout(barmode='group', xaxis={'categoryorder':'total descending'})
     elif plot_type == 'Stacked Bar Chart':
-        # group by x_axis and y_axis and count the values
         fig = px.bar(data.groupby([x_axis, y_axis]).size().reset_index(), x=x_axis, y=0, color=y_axis)
-        
+        fig.update_layout(barmode='stack', xaxis={'categoryorder':'total descending'})
     elif plot_type == 'Box Plot':
         fig = px.box(data, x=x_axis, y=y_axis)
     elif plot_type == 'Line Chart (Sum)':
@@ -704,37 +697,36 @@ def create_visualization(data, x_axis, y_axis, plot_type):
         else:
             fig = px.line(data.groupby(pd.Grouper(key=x_axis, freq='D'))[y_axis].nunique().reset_index(), x=x_axis, y=y_axis)
     elif plot_type == 'Pie Chart':
-        # if one axis is numeric, group by the other axis and sum the values and if bothe are object, group by the x_axis and count the values
         if data[x_axis].dtype in ['float64', 'int64']:
             fig = px.pie(data.groupby(y_axis)[x_axis].sum().reset_index(), values=x_axis, names=y_axis)
         else:
             fig = px.pie(data.groupby(x_axis)[y_axis].count().reset_index(), values=y_axis, names=x_axis)
     elif plot_type == 'Pie Chart(Count)':
         fig = px.pie(data.groupby(x_axis).size().reset_index(), values=0, names=x_axis)
-
-
     elif plot_type == 'Count Plot':
         fig = px.histogram(data, x=x_axis)
+        fig.update_layout(barmode='group', xaxis={'categoryorder':'total descending'})
     elif plot_type == 'Bar Chart':
-        fig = px.bar(data.groupby(x_axis)[y_axis].count().reset_index(), x=x_axis, y=y_axis)
+        fig = px.bar(data.groupby(x_axis)[y_axis].count().reset_index(), x=x_axis, y=y_axis, color=x_axis, barmode='group')
+        fig.update_layout(barmode='group', xaxis={'categoryorder':'total descending'})
     return fig
 
 # Function to handle data visualization
 def display_visualizations(data):
     if data is not None:
-        display_dataset(data)
+        # display_dataset(data)
         # display_columns(data)
 
         if data is not None:
-            x_axis = st.selectbox('Select the x-axis value:', [None] + data.columns.to_list())
-            y_axis = st.selectbox('Select the y-axis value:', [None] + data.columns.to_list())
+            x_axis = st.selectbox(':blue[**Select the x-axis value**] :', [None] + data.columns.to_list())
+            y_axis = st.selectbox(':blue[**Select the y-axis value**] :', [None] + data.columns.to_list())
 
             if x_axis is not None and y_axis is not None:
                 x_axis_dtype = data[x_axis].dtype
                 y_axis_dtype = data[y_axis].dtype
-                available_plot_types = get_available_plot_types(x_axis_dtype, y_axis_dtype)
+                available_plot_types = get_available_plot_types(x_axis_dtype, y_axis_dtype, x_axis, y_axis)
 
-                plot_type = st.selectbox('Select the type of plot:', available_plot_types)
+                plot_type = st.selectbox(':blue[**Select the type of plot**] :', available_plot_types)
 
                 if plot_type != 'None':
                     fig = create_visualization(data, x_axis, y_axis, plot_type)
@@ -766,15 +758,21 @@ def train_nlp_model(pipe, X_train, y_train, X_test):
     y_pred = pipe.predict(X_test)
     return y_pred
 
-def preprocess_text_data(data, feature, target_column):
-    feature = data[feature].str.replace('[^a-zA-Z]', ' ')
+# Define the function to preprocess text data
+def preprocess_text_data(data, feature_column, target_column):
+    # Ensure the feature column is treated as a string and handle NaNs
+    data = data.dropna(subset=[feature_column, target_column])
+    feature = data[feature_column].astype(str).fillna('')
+
+    # Clean the feature column
+    feature = feature.str.replace('[^a-zA-Z]', ' ', regex=True)
     feature = feature.str.lower()
-    stop_words = stopwords.words('english')
-    feature = feature.apply(lambda x: ' '.join([word for word in str(x).split() if word not in stop_words]))
+    stop_words = set(stopwords.words('english'))
+    feature = feature.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
     lemmatizer = WordNetLemmatizer()
     feature = feature.apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in x.split()]))
 
-
+    # Encode the target column if it's a string
     if isinstance(target_column, str):
         y = data[target_column]
         if y.dtype == 'object':
@@ -785,68 +783,72 @@ def preprocess_text_data(data, feature, target_column):
 
     return feature, y
 
+
 def model_building(data):
     if data is not None:
-        with st.expander('Orignal Data', expanded=False):
-            data
-        # data = data.dropna()
-        st.header('Model Creation')
+        # with st.expander('Orignal Data', expanded=False):
+        #     data
 
-        problem_type = st.radio('Select the models type', ['None','Classification', 'Regression', 'Sentiment Analysis'], horizontal=True)
-
-        st.success(f'The selected model type is: {problem_type}')
+        problem_type = st.radio(':blue[**Select the problem type**] : ', ['None','Classification', 'Regression', 'Sentiment Analysis'],horizontal=True)
 
         if problem_type != 'None':
             if problem_type == 'Classification':
-                models = st.radio('Select the models', ['None','Random Forest', 'Logistic Regression', 'Decision Tree'], horizontal=False)
+                models = st.radio(':blue[**Select the models**] :', ['None','Random Forest', 'Logistic Regression', 'K-Nearest Neighbors'], horizontal=False)
                 if models != 'None':
-                    st.success(f'The selected model type is: {models}')
 
-                    target_column = st.selectbox('Select the target column', [None] + list(data.columns))
-                    features = st.multiselect('Select the features', list(data.columns))
+                    target_column = st.selectbox(':blue[**Select the target column**] :', [None] + list(data.columns))
+                    features = st.multiselect(':blue[**Select the features**] : ', list(data.columns))
 
                     if target_column is not None and features:
                         X = data[features]
                         y = data[target_column]
 
                         if not X.empty and not y.empty:
+                            numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+                            categorical_features = X.select_dtypes(include=['object']).columns
                             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-                            _, class_train, class_test, _ = st.columns([1, 2, 2, 1])
-                            with class_train:
-                                st.write('Train Data')
-                                st.write(X_train)
+                            _, class_train, class_test, _ = st.columns([0.1, 2, 2, 0.1])
+                            with st.container():
+                                with class_train:
+                                    st.write(':blue[**Train Data**] :')
+                                    st.write(X_train)
 
-                            with class_test:
-                                st.write('Test Data')
-                                st.write(X_test)
+                                with class_test:
+                                    st.write(':blue[**Test Data**] :')
+                                    st.write(X_test)
+                        else:
+                            st.warning('The selected features and target column are empty.')
 
-                        # lets create a pipeline for the classification model
+                        preprocessor_classification = ColumnTransformer(
+                            transformers=[
+                                ('cat', Pipeline([
+                                    ('imputer', SimpleImputer(strategy='most_frequent')),
+                                    ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
+                                ]), categorical_features),
+                                ('num', Pipeline([
+                                    ('imputer', SimpleImputer(strategy='mean')),
+                                    ('scaler', StandardScaler())
+                                ]), numeric_features)
+                            ],
+                            remainder='passthrough'  # Keep the rest of the columns as they are
+                        )
+
                         rf_pipeline = Pipeline([
-                            ('encoder', OneHotEncoder(), features),
+                            ('preprocessor', preprocessor_classification),
                             ('classifier', RandomForestClassifier())
                         ])
 
                         lr_pipeline = Pipeline([
-                            ('encoder', OneHotEncoder(), features),
+                            ('preprocessor', preprocessor_classification),
                             ('classifier', LogisticRegression())
                         ])
 
-                        # svm_pipeline = Pipeline([
-                        #     ('encoder', OneHotEncoder(), features),
-                        #     ('classifier', SVC())
-                        # ])
-
-                        dt_pipeline = Pipeline([
-                            ('encoder', OneHotEncoder(), features),
-                            ('classifier', DecisionTreeClassifier())
+                        knn_pipeline = Pipeline([
+                            ('preprocessor', preprocessor_classification),
+                            ('classifier', KNeighborsClassifier())
                         ])
-
-                        # knn_pipeline = Pipeline([
-                        #     ('encoder', OneHotEncoder(), features),
-                        #     ('classifier', KNeighborsClassifier())
-                        # ])
-
+                        
                         label_encoder = LabelEncoder()
                         y_train = label_encoder.fit_transform(y_train)
                         y_test = label_encoder.transform(y_test)
@@ -857,84 +859,76 @@ def model_building(data):
                         elif models == 'Logistic Regression':
                             y_pred = train_classification_model(lr_pipeline, X_train, y_train, X_test)
 
-                        # elif models == 'Support Vector Machine':
-                        #     y_pred = train_classification_model(svm_pipeline, X_train, y_train, X_test)
+                        elif models == 'K-Nearest Neighbors':
+                            y_pred = train_classification_model(knn_pipeline, X_train, y_train, X_test)
 
-                        elif models == 'Decision Tree':
-                            y_pred = train_classification_model(dt_pipeline, X_train, y_train, X_test)
-
-                        # elif models == 'K-Nearest Neighbors':
-                        #     y_pred = train_classification_model(knn_pipeline, X_train, y_train, X_test)
-
-                        st.write('Accuracy:', accuracy_score(y_test, y_pred))
-                        st.write('Confusion Matrix:', confusion_matrix(y_test, y_pred))
+                        st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
+                        st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
                         report = classification_report(y_test, y_pred, output_dict=True)
-                        st.write('Classification Report:')
+                        st.write(':blue[**Classification Report**] :')
                         st.dataframe(pd.DataFrame(report).transpose())
 
                     else:
-                        st.warning('Please select the target column.')
+                        st.warning('Please select the target column and features.')
                 else: 
                     st.warning('Please select a model.')
 
             elif problem_type == 'Regression':
-                models = st.radio('Select the models', ['None','Random Forest', 'Linear Regression', 'Decision Tree'])
+                models = st.radio(':blue[**Select the models**] :', ['None','Random Forest', 'Linear Regression', 'SVR'])
                 if models != 'None':
-                    target_column = st.selectbox('Select the target column', [None] + list(data.columns))
-                    features = st.multiselect('Select the features', list(data.columns))
+                    target_column = st.selectbox(':blue[**Select the target column**] : ', [None] + list(data.columns))
+                    features = st.multiselect(':blue[**Select the features**] : ', list(data.columns))
                     if target_column is not None and features:
                         X = data[features]
                         y = data[target_column]
 
                         if not X.empty and not y.empty:
+                            numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+                            categorical_features = X.select_dtypes(include=['object']).columns
                             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+                            _, reg_train, reg_test, _ = st.columns([0.1, 2, 2, 0.1])
+                            with st.container():
+                                with reg_train:
+                                    st.write(':blue[**Train Data**] :')
+                                    st.write(X_train)
+
+                                with reg_test:
+                                    st.write(':blue[**Test Data**] :')
+                                    st.write(X_test)
                         else:
-                            st.warning('Please select the target column.')
-
-
-                        reg_train, reg_test = st.columns(2)
-                        with reg_train:
-                            st.write('Train Data')
-                            st.write(X_train)
-
-                        with reg_test:
-                            st.write('Test Data')
-                            st.write(X_test)
+                            st.warning('The selected features and target column are empty.')
                         
-                        # Define the ColumnTransformer to apply OneHotEncoder to the specified features
-                        preprocessor = ColumnTransformer(
+                        # Define the ColumnTransformer with imputers, encoders, and scalers
+                        preprocessor_regressor = ColumnTransformer(
                             transformers=[
-                                ('encoder', OneHotEncoder(), features)
+                                ('cat', Pipeline([
+                                    ('imputer', SimpleImputer(strategy='most_frequent')),
+                                    ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
+                                ]), categorical_features),
+                                ('num', Pipeline([
+                                    ('imputer', SimpleImputer(strategy='mean')),
+                                    ('scaler', StandardScaler())
+                                ]), numeric_features)
                             ],
                             remainder='passthrough'  # Keep the rest of the columns as they are
                         )
 
-                        # create a pipeline for the regression model
+                        # Create a pipeline for the regression model
                         rf_pipeline = Pipeline([
-                            ('preprocessor', preprocessor),
+                            ('preprocessor', preprocessor_regressor),
                             ('regressor', RandomForestRegressor())
                         ])
 
                         lr_pipeline = Pipeline([
-                            ('preprocessor', preprocessor),
+                            ('preprocessor', preprocessor_regressor),
                             ('regressor', LinearRegression())
                         ])
 
-                        # svm_pipeline = Pipeline([
-                        #     ('preprocessor', preprocessor),
-                        #     ('regressor', SVR())
-                        # ])
-
-                        dt_pipeline = Pipeline([
-                            ('preprocessor', preprocessor),
-                            ('regressor', DecisionTreeRegressor())
+                        svm_pipeline = Pipeline([
+                            ('preprocessor', preprocessor_regressor),
+                            ('regressor', SVR())
                         ])
-
-                        # knn_pipeline = Pipeline([
-                        #     ('preprocessor', preprocessor),
-                        #     ('regressor', KNeighborsRegressor())
-                        # ])
 
                         if models == 'Random Forest':
                             y_pred = train_regression_model(rf_pipeline, X_train, y_train, X_test)
@@ -942,139 +936,116 @@ def model_building(data):
                         elif models == 'Linear Regression':
                             y_pred = train_regression_model(lr_pipeline, X_train, y_train, X_test)
 
-                        # elif models == 'Support Vector Machine':
-                        #     y_pred = train_regression_model(svm_pipeline, X_train, y_train, X_test)
-
-                        elif models == 'Decision Tree':
-                            y_pred = train_regression_model(dt_pipeline, X_train, y_train, X_test)
-
-                        # elif models == 'K-Nearest Neighbors':
-                        #     y_pred = train_regression_model(knn_pipeline, X_train, y_train, X_test)
-
-                        st.write('Mean Squared Error:', mean_squared_error(y_test, y_pred))
-                        st.write('R2 Score:', r2_score(y_test, y_pred))
-
+                        elif models == 'SVR':
+                            y_pred = train_regression_model(svm_pipeline, X_train, y_train, X_test)
+                        
+                        st.write(':blue[**Mean Squared Error**] :', mean_squared_error(y_test, y_pred))
+                        st.write(':blue[**R2 Score**] :', r2_score(y_test, y_pred))
+                            
                     else:
-                        st.warning('Please select the target column.')
+                        st.warning('Please select the target column and features.')
+
                 else:
                     st.warning('Please select a model.')
 
             elif problem_type == 'Sentiment Analysis':
-                models = st.radio('Select the models', ['None', 'Logistic Regression','Random Forest', 'Multinomial Naive Bayes'])
+                models = st.radio(':blue[**Select the models**] :', ['None', 'Logistic Regression','Random Forest', 'Multinomial Naive Bayes'])
                 if models != 'None':
-                    target_column = st.selectbox('Select the target column', [None] + list(data.columns))
-                    feature = st.selectbox('Select the features', [None] + list(data.columns))
-                    if target_column != None and feature != None:
-                        X, y = preprocess_text_data(data, feature, target_column)
+                    target_column = st.selectbox(':blue[**Select the target column**] :', [None] + list(data.columns))
+                    if target_column != None:
+                        feature = st.selectbox(':blue[**Select the feature column**] :', [None] + list(data.columns))
+                        if feature != None and data[feature].dtype == 'object':
+                            X, y = preprocess_text_data(data, feature, target_column)
+                            # Ensure the target variable is discrete for classification models
+                            if pd.api.types.is_numeric_dtype(y) and y.dtype == float:
+                                y = y.astype('category').cat.codes
 
-                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-                        nlp_train, nlp_test = st.columns(2) 
-                        with nlp_train:
-                            st.write('Train Data')
-                            st.write(X_train)
+                            _, nlp_train, nlp_test,_ = st.columns([0.1, 2, 2, 0.1])
+                            with nlp_train:
+                                st.write(':blue[**Train Data**] :')
+                                st.write(X_train)
 
-                        with nlp_test:
-                            st.write('Test Data')
-                            st.write(X_test)
+                            with nlp_test:
+                                st.write(':blue[**Test Data**] :')
+                                st.write(X_test)
 
-                        # create a pipeline for the nlp model
-                        lr_pipeline = Pipeline([
-                            ('vectorizer', TfidfVectorizer()),
-                            ('classifier', LogisticRegression())
-                        ])
+                            # create a pipeline for the nlp model
+                            lr_pipeline = Pipeline([
+                                ('preprocessor', TfidfVectorizer()),
+                                ('classifier', LogisticRegression())
+                            ])
 
-                        # svm_pipeline = Pipeline([
-                        #     ('vectorizer', TfidfVectorizer()),
-                        #     ('classifier', SVC())
-                        # ])
+                            rf_pipeline = Pipeline([
+                                ('preprocessor', TfidfVectorizer()),
+                                ('classifier', RandomForestClassifier())
+                            ])
 
-                        rf_pipeline = Pipeline([
-                            ('vectorizer', TfidfVectorizer()),
-                            ('classifier', RandomForestClassifier())
-                        ])
+                            naive_bayes_pipeline = Pipeline([
+                                ('preprocessor', TfidfVectorizer()),
+                                ('classifier', MultinomialNB())
+                            ])
 
-                        # dt_pipeline = Pipeline([
-                        #     ('vectorizer', TfidfVectorizer()),
-                        #     ('classifier', DecisionTreeClassifier())
-                        # ])
+                            if models == 'Logistic Regression':
+                                y_pred = train_nlp_model(lr_pipeline, X_train, y_train, X_test)
 
-                        # knn_pipeline = Pipeline([
-                        #     ('vectorizer', TfidfVectorizer()),
-                        #     ('classifier', KNeighborsClassifier())
-                        # ])
-                        naive_bayes_pipeline = Pipeline([
-                            ('vectorizer', TfidfVectorizer()),
-                            ('classifier', MultinomialNB())
-                        ])
+                            elif models == 'Random Forest':
+                                y_pred = train_nlp_model(rf_pipeline, X_train, y_train, X_test)
 
-                        if models == 'Logistic Regression':
-                            y_pred = train_nlp_model(lr_pipeline, X_train, y_train, X_test, y_test)
+                            elif models == 'Multinomial Naive Bayes':
+                                y_pred = train_nlp_model(naive_bayes_pipeline, X_train, y_train, X_test)
 
-                        # elif models == 'Support Vector Machine':
-                        #     y_pred = train_nlp_model(svm_pipeline, X_train, y_train, X_test, y_test)
-
-                        elif models == 'Random Forest':
-                            y_pred = train_nlp_model(rf_pipeline, X_train, y_train, X_test, y_test)
-
-                        # elif models == 'Decision Tree':
-                        #     y_pred = train_nlp_model(dt_pipeline, X_train, y_train, X_test, y_test)
-
-                        # elif models == 'K-Nearest Neighbors':
-                        #     y_pred = train_nlp_model(knn_pipeline, X_train, y_train, X_test, y_test)
-                        elif models == 'Multinomial Naive Bayes':
-                            y_pred = train_nlp_model(naive_bayes_pipeline, X_train, y_train, X_test, y_test)
-
-                        st.write('Accuracy:', accuracy_score(y_test, y_pred))
-                        st.write('Confusion Matrix:', confusion_matrix(y_test, y_pred))
-                        st.write('Classification Report:')
-                        report = classification_report(y_test, y_pred, output_dict=True)
-                        st.dataframe(pd.DataFrame(report).transpose())
-
-                                # save the model
-                        save_model = joblib.dump(models, 'model.pkl')
-
-                        # Read the saved model file in binary mode
-                        with open('model.pkl', 'rb') as file:
-                            model_data = file.read()
-
-                        # Let the user download the model
-                        if model_data is not None:
-                            st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream')
-                        
+                            st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
+                            st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
+                            st.write(':blue[**Classification Report**] :')
+                            report = classification_report(y_test, y_pred, output_dict=True)
+                            st.dataframe(pd.DataFrame(report).transpose())
+                        else:
+                            st.info('Please select a text feature.')
                     else:
-                        st.warning('Please select the target column.')
+                        st.warning('Please select a target column.')
                 else:
                     st.warning('Please select a model.')
+            
+            # save the model
+            save_model = joblib.dump(models, 'model.pkl')
+
+            # Read the saved model file in binary mode
+            with open('model.pkl', 'rb') as file:
+                model_data = file.read()
+
+            # Let the user download the model
+            if model_data is not None:
+                st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream')
         else:
-            st.warning('Please select something to do the analysis.')
+            st.warning('Please select a problem type to do the analysis.')
 
     else:
         st.warning('Please select or upload a file.')
 
-
-
 # Add file uploader and file selector to the sidebar
-if selected_option == 'Upload a new file':
-    uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type=["csv", "xlsx"])
+uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
+
+if uploaded_file is not None:
     data = load_data(uploaded_file)
+
+    # Tabs for different sections
+    tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
+
+    with tab1:
+        show_data_overview(data)
+
+    with tab2:
+        # create a placeholder to show the data after handling missing values
+        with st.expander('Cleaned Data', expanded=False):
+            show_data= st.empty()
+        display_and_download_cleaned_data(data)
+
+    with tab3:
+        display_visualizations(data)
+    with tab4:
+        model_building(data)
 else:
-    selected_option= None
-    st.warning('Please select a file to upload.')
-
-
-# Tabs for different sections
-tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
-
-with tab1:
-    show_data_overview(data)
-
-with tab2:
-    st.write(':blue[**Data Cleaning**] :')
-    display_and_download_cleaned_data(data)
-
-with tab3:
-    display_visualizations(data)
-with tab4:
-    model_building(data)
-    
+    st.warning('Please upload a file to get started.')
+        
