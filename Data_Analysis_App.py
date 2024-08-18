@@ -27,13 +27,13 @@ import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
-try:
-    import spacy
-    nlp = spacy.load('en_core_web_sm')
-except Exception as e:
-    os.system('python -m spacy download en_core_web_sm')
-    import spacy
-    nlp = spacy.load('en_core_web_sm')
+# try:
+#     import spacy
+#     nlp = spacy.load('en_core_web_sm')
+# except Exception as e:
+#     os.system('python -m spacy download en_core_web_sm')
+#     import spacy
+#     nlp = spacy.load('en_core_web_sm')
 # nltk.download('wordnet')
 # from nltk.corpus import stopwords
 # from nltk.stem import WordNetLemmatizer
@@ -778,7 +778,8 @@ def preprocess_text_data(data, feature_column, target_column):
     feature = feature.str.replace('[^a-zA-Z]', ' ', regex=True)
     feature = feature.str.lower()
     # lemmatize the words and get rid of stop words using spacy
-    feature = feature.apply(lambda x: ' '.join([word.lemma_ for word in nlp(x) if word not in nlp.Defaults.stop_words]))
+    # not working now skip
+    feature = feature.apply(lambda x: ' '.join([word for word in x.split()]))
     # stop_words = set(stopwords.words('english'))
     # feature = feature.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
     # lemmatizer = WordNetLemmatizer()
