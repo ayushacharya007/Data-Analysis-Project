@@ -31,6 +31,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
 import nltk
+from nltk.corpus import stopwords
+from nltk.stem import wordnet
 
 nltk.download('stopwords')
 nltk.download('wordnet')
