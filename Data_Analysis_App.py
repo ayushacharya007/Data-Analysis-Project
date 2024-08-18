@@ -27,10 +27,16 @@ import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
-import nltk
-nltk.download('all', force=True)
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
+# try:
+#     import spacy
+#     nlp = spacy.load('en_core_web_sm')
+# except Exception as e:
+#     os.system('python -m spacy download en_core_web_sm')
+#     import spacy
+#     nlp = spacy.load('en_core_web_sm')
+# nltk.download('wordnet')
+# from nltk.corpus import stopwords
+# from nltk.stem import WordNetLemmatizer
 
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
@@ -771,10 +777,13 @@ def preprocess_text_data(data, feature_column, target_column):
     # Clean the feature column
     feature = feature.str.replace('[^a-zA-Z]', ' ', regex=True)
     feature = feature.str.lower()
-    stop_words = set(stopwords.words('english'))
-    feature = feature.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
-    lemmatizer = WordNetLemmatizer()
-    feature = feature.apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in x.split()]))
+    # lemmatize the words and get rid of stop words using spacy
+    # not working now skip
+    feature = feature.apply(lambda x: ' '.join([word for word in x.split()]))
+    # stop_words = set(stopwords.words('english'))
+    # feature = feature.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
+    # lemmatizer = WordNetLemmatizer()
+    # feature = feature.apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in x.split()]))
     
     # if feature.str.strip().eq('').all():
     #     st.error('The feature column is empty after preprocessing. Please check the data and try again.')

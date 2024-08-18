@@ -4,7 +4,7 @@ plotly
 streamlit
 wordcloud
 scikit-learn
-nltk
+spacy
 langchain
 langchain-openai
 langchain_experimental
