@@ -17,5 +17,4 @@ seaborn
 transformers
 tensorflow
 matplotlib
-streamlit-option-menu
 tf-keras

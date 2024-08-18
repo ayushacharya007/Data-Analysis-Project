@@ -39,15 +39,10 @@ nltk.download('wordnet')
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
 
 # display the data at the top container
-with st.expander("View Original Data", expanded=False):
-    original_data = st.empty()
 
 # read the style.css file
 with open("style.css") as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-# Center the page title using markdown
-st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
 
 # @st.cache_data
 def load_data(file):
@@ -1078,9 +1073,11 @@ uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
 
 if uploaded_file is not None:
     data = load_data(uploaded_file)
-
-    # show the original data at the beginning
-    original_data.write(data)
+    with st.expander("View Original Data", expanded=False):
+        original_data = st.empty()
+    
+    # Center the page title using markdown
+    st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
 
 
     # Tabs for different sections

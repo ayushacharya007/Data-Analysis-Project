@@ -7,8 +7,8 @@ cache/
 exports/
 storage/
 wryteai_storage/
-.env
 models/
 codes/
 style.css
 fix_data_types.py
+pandasai.log

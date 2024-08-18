@@ -32,7 +32,7 @@ h1 {
     padding: 4px 10px;
 }
 .imbalance-alert span {
-    background-color: #ffff00;
+    background-color: #ff1bbb;
     padding: 4px 9px;
 }
 .missing-alert span {
@@ -40,7 +40,7 @@ h1 {
     padding: 4px 19px;
 }
 .unique-alert span {
-    background-color: #cc00ff;
+    background-color: #5310f0;
     padding: 4px 19px;
 }
 .stat-box {
