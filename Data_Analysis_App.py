@@ -27,10 +27,11 @@ import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
-import spacy
 try:
+    import spacy
     nlp = spacy.load('en_core_web_sm')
 except Exception as e:
+    import spacy
     os.system('python3 -m spacy download en_core_web_sm')
     nlp = spacy.load('en_core_web_sm')
 # nltk.download('wordnet')
