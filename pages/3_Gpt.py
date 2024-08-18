@@ -22,23 +22,17 @@ else:
     model = st.sidebar.selectbox(":blue[**Select the model**] :", models)
 
     df = pd.DataFrame()
-    uploaded_file = st.sidebar.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx"])
+    uploaded_file = st.sidebar.file_uploader("Upload a CSV or Excel file", type=["csv"])
     if uploaded_file is not None:
         try:
             csv_encoding = ['utf-8', 'latin1', 'ISO-8859-1', 'cp1252']
-            if uploaded_file.name.endswith('.csv'):
-                for encoding in csv_encoding:
-                    try:
-                        df = pd.read_csv(uploaded_file, encoding=encoding)
-                        break
-                    except Exception as e:
-                        pass
-            elif uploaded_file.name.endswith('.xlsx'):
-                df = pd.read_excel(uploaded_file, engine='openpyxl')
-            else:
-                st.error("Unsupported file format")
-        
-        
+            for encoding in csv_encoding:
+                try:
+                    df = pd.read_csv(uploaded_file, encoding=encoding)
+                    break
+                except Exception as e:
+                    pass
+
             with st.expander("Show Dataframe"):
                 st.write(df)
 
