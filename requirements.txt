@@ -18,4 +18,3 @@ transformers
 tensorflow
 matplotlib
 tf-keras
-nltk.download('stopwords')

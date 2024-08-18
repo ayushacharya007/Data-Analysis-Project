@@ -34,9 +34,6 @@ import nltk
 from nltk.corpus import stopwords
 # from nltk.stem import wordnet
 
-nltk.download('stopwords')
-# nltk.download('wordnet')
-
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
 
