@@ -17,7 +17,6 @@ from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, mean_squared_error, r2_score
-from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
@@ -29,10 +28,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
 import nltk
-from nltk.corpus import stopwords, wordnet
-nltk.download('stopwords', quiet=True)
-nltk.download('wordnet', quiet=True)
-# nltk.download('omw-1.4', quiet=True)
+nltk.download('all', force=True)
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
