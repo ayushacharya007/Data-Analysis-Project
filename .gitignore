@@ -13,3 +13,9 @@ style.css
 fix_data_types.py
 pandasai.log
 .devcontainer/
+
+.venv/
+
+*.pkl
+
+*.py[cod]
