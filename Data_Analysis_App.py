@@ -31,8 +31,8 @@ try:
     import spacy
     nlp = spacy.load('en_core_web_sm')
 except Exception as e:
-    import spacy
     os.system('python3 -m spacy download en_core_web_sm')
+    import spacy
     nlp = spacy.load('en_core_web_sm')
 # nltk.download('wordnet')
 # from nltk.corpus import stopwords
