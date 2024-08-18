@@ -13,15 +13,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.svm import SVC, SVR
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, mean_squared_error, r2_score
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 import joblib
 import time
@@ -30,8 +29,8 @@ import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
-import nltk
-from nltk.corpus import stopwords
+from nltk import *
+# from nltk.corpus import stopwords
 # from nltk.stem import wordnet
 
 
