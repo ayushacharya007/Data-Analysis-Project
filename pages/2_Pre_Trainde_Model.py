@@ -9,7 +9,7 @@ for i in range(2):
     st.write("")
 
 def analyze_sentiment(uploaded_file=None, user_input=None):
-    model_name = "siebert/sentiment-roberta-large-english"
+    model_name = "distilbert-base-uncased-finetuned-sst-2-english"
     nlp = pipeline("sentiment-analysis", model=model_name)
 
     if user_input:

@@ -59,8 +59,6 @@ def load_data(file):
                         break
                     except Exception as e:
                         pass
-            elif file.name.endswith('.xlsx'):
-                data = pd.read_excel(file)
             else:
                 st.error("Unsupported file format")
                 return None
@@ -1079,8 +1077,9 @@ uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
 
 if uploaded_file is not None:
     data = load_data(uploaded_file)
+
     with st.expander("View Original Data", expanded=False):
-        original_data = st.empty()
+        original_data = st.write(data)
     
     # Center the page title using markdown
     st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
