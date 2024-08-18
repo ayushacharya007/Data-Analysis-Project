@@ -31,7 +31,7 @@ try:
     import spacy
     nlp = spacy.load('en_core_web_sm')
 except Exception as e:
-    os.system('python3 -m spacy download en_core_web_sm')
+    os.system('python -m spacy download en_core_web_sm')
     import spacy
     nlp = spacy.load('en_core_web_sm')
 # nltk.download('wordnet')
