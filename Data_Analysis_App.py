@@ -31,6 +31,7 @@ from sklearn.impute import SimpleImputer
 import nltk
 nltk.download('stopwords')
 nltk.download('wordnet')
+nltk.download('omw-1.4')
 
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
