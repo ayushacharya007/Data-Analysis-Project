@@ -39,7 +39,10 @@ from sklearn.impute import SimpleImputer
 # from nltk.stem import WordNetLemmatizer
 
 
-st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Data Analysis", page_icon="📊", layout="wide")
+
+# Center the page title using markdown
+st.markdown("<h3 style='text-align: center;'> Data Analysis 📊 </h3>", unsafe_allow_html=True)
 
 # display the data at the top container
 
@@ -289,15 +292,15 @@ def show_data_overview(data):
     if data is not None:
         if 'report_profile' not in st.session_state:
             st.session_state.report_profile = False
+
         if st.button('Generate Report', use_container_width=True):
             st.session_state.report_profile = not st.session_state.report_profile
 
         if st.session_state.report_profile:
-            with st.spinner('Generating Report for Your Data...'):
-                # lets put the time.sleep(7) to show the spinner for 5 seconds
-                time.sleep(0)
-                st.write('')
-
+            with st.spinner('Report is being generated...'):
+                # Simulate a delay to show the spinner for 5 seconds
+                time.sleep(1)
+                
                 with st.container():
                     overview_tab, alerts_tab, fix_data_type = st.tabs(["Overview", "Alerts", "Fix Data Types"])
 
@@ -322,14 +325,14 @@ def show_data_overview(data):
                             _, alert, _ = st.columns([0.2, 3, 0.3])
                             with alert:
                                 with st.container():
-                                # Generate alerts
+                                    # Generate alerts
                                     alerts = generate_alerts(data)
                                     st.markdown(alerts, unsafe_allow_html=True)
                         with st.container():
                             for i in range(1):
                                 st.write('')
                             st.write(':blue[**Columns Overview**] :')
-                            data_overview(data)   
+                            data_overview(data)
     else:
         st.warning("Please select or upload a file.")
         
@@ -1080,10 +1083,6 @@ if uploaded_file is not None:
 
     with st.expander("View Original Data", expanded=False):
         original_data = st.write(data)
-    
-    # Center the page title using markdown
-    st.markdown("<h1>Data Analysis APP</h1>", unsafe_allow_html=True)
-
 
     # Tabs for different sections
     tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
