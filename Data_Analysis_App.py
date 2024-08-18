@@ -29,9 +29,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
 import nltk
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+from nltk.corpus import stopwords, wordnet
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+# nltk.download('omw-1.4', quiet=True)
 
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
