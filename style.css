@@ -8,7 +8,7 @@ h1 {
 .alert {
     margin-right: 70px;
     /* add a line below every alery */
-    border-bottom: 1px solid #f4bbf1;
+    border-bottom: 1px solid #84717d;
     margin-bottom: -5px;
 }
 
@@ -23,21 +23,24 @@ h1 {
     border:  None;
     font-size: 13px;
     border-radius: 5px;
+    text-align: center;
+    width: 110px;
+
 }
 .high-corr-alert span {
-    background-color: #6946ea;
+    background-color: #09a3fc;
     padding: 4px 10px;
 }
 .imbalance-alert span {
-    background-color: #dd9728;
+    background-color: #ffff00;
     padding: 4px 9px;
 }
 .missing-alert span {
-    background-color: #df162e;
+    background-color: #f20722;
     padding: 4px 19px;
 }
 .unique-alert span {
-    background-color: #7ae925;
+    background-color: #cc00ff;
     padding: 4px 19px;
 }
 .stat-box {
@@ -145,7 +148,7 @@ h1 {
 }
 .st-emotion-cache-ocqkz7.e1f1d6gn5{
     /* create a outside border */
-    border: 1px solid #f4bbf1;
+    border: 1px solid #958a94;
     border-radius: 5px;
     padding-bottom: 20px;
 }

@@ -38,6 +38,10 @@ nltk.download('wordnet')
 
 st.set_page_config(page_title="Write AI Data Analysis", page_icon="📊", layout="wide")
 
+# display the data at the top container
+with st.expander("View Original Data", expanded=False):
+    original_data = st.empty()
+
 # read the style.css file
 with open("style.css") as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -66,6 +70,7 @@ def load_data(file):
             st.error(f"Error loading file: {e}")
             return None
         return data
+
 
 def correct_data_types(data):
     if data is not None:
@@ -98,7 +103,7 @@ def correct_data_types(data):
                             data[column] = pd.to_datetime(data[column], errors='coerce')
                     except Exception as e:
                         conversion_successful = False
-                        st.error(f"Error converting column :blue[{column}] to :green[{data_type}]")
+                        st.error(f'Error converting column ":blue[{column}]" to ":green[{data_type}]"')
                 else:
                     st.info('Please select data type to convert')
         else:
@@ -286,9 +291,6 @@ def data_overview(data):
 # Function to show data overview
 def show_data_overview(data):
     if data is not None:
-        # display the data at the top container
-        with st.expander("View Original Data", expanded=False):
-            st.write(data)
         if 'report_profile' not in st.session_state:
             st.session_state.report_profile = False
         if st.button('Generate Report', use_container_width=True):
@@ -301,7 +303,7 @@ def show_data_overview(data):
                 st.write('')
 
                 with st.container():
-                    fix_data_type, overview_tab, alerts_tab = st.tabs(["Fix Data Types", "Overview", "Alerts"])
+                    overview_tab, alerts_tab, fix_data_type = st.tabs(["Overview", "Alerts", "Fix Data Types"])
 
                     with fix_data_type:
                         with st.container():
@@ -344,9 +346,8 @@ def show_missing(data):
         'Percentage %': missing_percentage.values
     }, index=data.columns)
     missing_info.index.name = 'Columns'  # Set the index title
-    st.dataframe(missing_info)
-    st.write(':blue[**Select methods to handle null**] :')
-
+    with st.expander('Show Missing Values', expanded=False):
+        st.dataframe(missing_info)
 
 def drop_columns(data):
 
@@ -360,8 +361,6 @@ def drop_columns(data):
         selected_columns = st.multiselect(':blue[**Select the columns you want to drop**] :', data.columns)
         if selected_columns:
             data = data.drop(selected_columns, axis=1)
-            show_data.write(data)
-
             st.success('Selected columns dropped successfully.')
         else:
             st.info('No columns selected for dropping.')
@@ -382,7 +381,6 @@ def drop_data(data):
             st.info('No null values to drop.')
         else:
             data = data.dropna()
-            show_data.write(data)
             formatted_columns = ', '.join([f'{col} ({count})' for col, count in columns_with_nulls.items()])
             st.success(f'Rows with null values have been removed successfully from columns: :blue[{formatted_columns}]')
     return data
@@ -480,7 +478,7 @@ def replace_values(data):
                             st.error(f'An error occurred: {e}')
                 else:
                     st.warning('No Null Values to write in ":blue[{column}]"')    
-            show_data.write(data)
+            # show_data.write(data)
         else:
             st.warning('Please select columns to fill')
     return data
@@ -510,40 +508,47 @@ def replace_values(data):
 
 def missing_values(data):
     show_missing(data)
-    data = drop_columns(data)
-    data=drop_data(data)
-    data=replace_values(data)
+    with st.expander('Select methods to handle null', expanded=False):
+        data = drop_columns(data)
+        data = drop_data(data)
+        data = replace_values(data)
     # data = encode_data(data)
     return data
 
 def check_duplicates(data):
     # count the total duplicated rows
     duplicated_rows = data.duplicated().sum()
-    st.write(f':blue[**Total duplicated rows**] : :green[{duplicated_rows}]')
     # show the duplicated rows
     duplicated_rows = data[data.duplicated(keep=False)]
     duplicated_rows_sorted = duplicated_rows.sort_values(by=data.columns.tolist())
-    st.write(duplicated_rows_sorted)
-    st.write('')
-    selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
+    with st.expander('Show Duplicated Rows', expanded=False):
+        if duplicated_rows.shape[0] > 0:
+            st.write(f':blue[**Total duplicated rows**] : :green[{duplicated_rows.shape[0]}]')
+            st.write(duplicated_rows_sorted)
+            st.write('')
+        else:
+            st.info('No duplicated rows found. The dataset is clean.')
 
-    if selected_columns:  # Ensure there's at least one column selected
-        # Adjusted to include keep=False to mark all duplicates as True
-        duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
-        # Join the selected_columns list into a string separated by commas
-        columns_str = ', '.join(selected_columns)
-        st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
-        # Adjusted to include keep=False to get all duplicated rows
-        duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
-        # Sort the duplicated rows by the selected columns to display them one above the other
-        duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
-        # Display only the selected columns
-        st.write(duplicated_rows_sorted[selected_columns])
-    else:
-        st.info('Please select columns to check for duplicated values.')
+        for i in range(2):
+            st.write('')
+    
+        selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
 
-
-    st.write(':blue[**Select method to remove duplicates**] :')
+        if selected_columns:  # Ensure there's at least one column selected
+            # Adjusted to include keep=False to mark all duplicates as True
+            duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
+            # Join the selected_columns list into a string separated by commas
+            columns_str = ', '.join(selected_columns)
+            st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
+            # Adjusted to include keep=False to get all duplicated rows
+            duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
+            # Sort the duplicated rows by the selected columns to display them one above the other
+            duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
+            # Display only the selected columns
+            
+            st.write(duplicated_rows_sorted[selected_columns])
+        else:
+            st.info('Please select columns to check for duplicated values.')
     
     return data
 
@@ -561,7 +566,7 @@ def remove_duplicates_whole(data):
         if data.duplicated().any():
             # remove the duplicated rows
             data = data.drop_duplicates().reset_index(drop=True)
-            show_data.write(data)
+            # show_data.write(data)
             st.info(f'Duplicates have been removed successfully. The length of the data frame is :green[{len(data)}] after removing the duplicates.')
         else:
             st.info('No duplicated values to remove.')
@@ -581,7 +586,7 @@ def remove_duplicates_selected(data):
             if data.duplicated(subset=selected_columns).any():
                 # remove the duplicated rows based on selected columns
                 data = data.drop_duplicates(subset=selected_columns).reset_index(drop=True)
-                show_data.write(data)
+                # show_data.write(data)
                 st.info(f'Duplicates have been removed successfully for selected columns. The length of the data frame is :green[{len(data)}] after removing the duplicates for selected columns.')
             else:
                 st.info('No duplicated values to remove for selected columns.')
@@ -591,30 +596,37 @@ def remove_duplicates_selected(data):
 
 def duplicated_values(data):
     check_duplicates(data)
-    data = remove_duplicates_whole(data)
-    data = remove_duplicates_selected(data)
+    with st.expander('Select methods to handle duplicates', expanded=False):
+        data = remove_duplicates_whole(data)
+        data = remove_duplicates_selected(data)
     return data
 
 def display_and_download_cleaned_data(data):
     if data is not None:
         # Apply data cleaning steps
+        with st.expander('Show Modified/Cleaned Data', expanded=False):
+            show_data = st.empty()
         missing, duplicated, download_csv=st.tabs(['Missing Values', 'Duplicated Values', 'Download Cleaned Data'])
-        with missing:  
-            data = missing_values(data)
         
-        with duplicated:
-            data = duplicated_values(data)
-        
-        with download_csv:
-            if data is not None:
-                # Convert DataFrame to CSV, then encode to UTF-8 bytes
-                csv = data.to_csv(index=False).encode('utf-8')
-                download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
-                if download:
-                    # write a message to the user when the data is downloaded
-                    st.write(':green[**Downladed the cleaned data successfully.**]')
-            else:
-                st.warning("Data is not available for download.")
+        with  st.container():
+            with missing:  
+                data = missing_values(data)
+                show_data.write(data)
+                
+            with duplicated:
+                data = duplicated_values(data)
+                show_data.write(data)
+            
+            with download_csv:
+                if data is not None:
+                    # Convert DataFrame to CSV, then encode to UTF-8 bytes
+                    csv = data.to_csv(index=False).encode('utf-8')
+                    download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
+                    if download:
+                        # write a message to the user when the data is downloaded
+                        st.write(':green[**Downladed the cleaned data successfully.**]')
+                else:
+                    st.warning("Data is not available for download.")
     else:
         st.warning("Please select or upload a file.")
 
@@ -771,6 +783,9 @@ def preprocess_text_data(data, feature_column, target_column):
     feature = feature.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
     lemmatizer = WordNetLemmatizer()
     feature = feature.apply(lambda x: ' '.join([lemmatizer.lemmatize(word) for word in x.split()]))
+    
+    # if feature.str.strip().eq('').all():
+    #     st.error('The feature column is empty after preprocessing. Please check the data and try again.')
 
     # Encode the target column if it's a string
     if isinstance(target_column, str):
@@ -803,70 +818,82 @@ def model_building(data):
                         X = data[features]
                         y = data[target_column]
 
-                        if not X.empty and not y.empty:
-                            numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
-                            categorical_features = X.select_dtypes(include=['object']).columns
-                            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-                            _, class_train, class_test, _ = st.columns([0.1, 2, 2, 0.1])
-                            with st.container():
-                                with class_train:
-                                    st.write(':blue[**Train Data**] :')
-                                    st.write(X_train)
-
-                                with class_test:
-                                    st.write(':blue[**Test Data**] :')
-                                    st.write(X_test)
-                        else:
-                            st.warning('The selected features and target column are empty.')
-
-                        preprocessor_classification = ColumnTransformer(
-                            transformers=[
-                                ('cat', Pipeline([
-                                    ('imputer', SimpleImputer(strategy='most_frequent')),
-                                    ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
-                                ]), categorical_features),
-                                ('num', Pipeline([
-                                    ('imputer', SimpleImputer(strategy='mean')),
-                                    ('scaler', StandardScaler())
-                                ]), numeric_features)
-                            ],
-                            remainder='passthrough'  # Keep the rest of the columns as they are
-                        )
-
-                        rf_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_classification),
-                            ('classifier', RandomForestClassifier())
-                        ])
-
-                        lr_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_classification),
-                            ('classifier', LogisticRegression())
-                        ])
-
-                        knn_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_classification),
-                            ('classifier', KNeighborsClassifier())
-                        ])
+                        # Handle NaN values in the target column
+                        if y.isnull().any():
+                            st.warning('The target column contains NaN values. Rows with NaN values is dropped.')
+                            data = data.dropna(subset=[target_column])
+                            X = data[features]
+                            y = data[target_column]
                         
-                        label_encoder = LabelEncoder()
-                        y_train = label_encoder.fit_transform(y_train)
-                        y_test = label_encoder.transform(y_test)
+                        else:
+                            pass
 
-                        if models == 'Random Forest':
-                            y_pred = train_classification_model(rf_pipeline, X_train, y_train, X_test)
+                        try:
+                            if not X.empty and not y.empty:
+                                numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+                                categorical_features = X.select_dtypes(include=['object']).columns
+                                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-                        elif models == 'Logistic Regression':
-                            y_pred = train_classification_model(lr_pipeline, X_train, y_train, X_test)
+                                _, class_train, class_test, _ = st.columns([0.1, 2, 2, 0.1])
+                                with st.container():
+                                    with class_train:
+                                        st.write(':blue[**Train Data**] :')
+                                        st.write(X_train)
 
-                        elif models == 'K-Nearest Neighbors':
-                            y_pred = train_classification_model(knn_pipeline, X_train, y_train, X_test)
+                                    with class_test:
+                                        st.write(':blue[**Test Data**] :')
+                                        st.write(X_test)
 
-                        st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
-                        st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
-                        report = classification_report(y_test, y_pred, output_dict=True)
-                        st.write(':blue[**Classification Report**] :')
-                        st.dataframe(pd.DataFrame(report).transpose())
+                            preprocessor_classification = ColumnTransformer(
+                                transformers=[
+                                    ('cat', Pipeline([
+                                        ('imputer', SimpleImputer(strategy='most_frequent')),
+                                        ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
+                                    ]), categorical_features),
+                                    ('num', Pipeline([
+                                        ('imputer', SimpleImputer(strategy='mean')),
+                                        ('scaler', StandardScaler())
+                                    ]), numeric_features)
+                                ],
+                                remainder='passthrough'  # Keep the rest of the columns as they are
+                            )
+
+                            rf_pipeline = Pipeline([
+                                ('preprocessor', preprocessor_classification),
+                                ('classifier', RandomForestClassifier())
+                            ])
+
+                            lr_pipeline = Pipeline([
+                                ('preprocessor', preprocessor_classification),
+                                ('classifier', LogisticRegression())
+                            ])
+
+                            knn_pipeline = Pipeline([
+                                ('preprocessor', preprocessor_classification),
+                                ('classifier', KNeighborsClassifier())
+                            ])
+                            
+                            label_encoder = LabelEncoder()
+                            y_train = label_encoder.fit_transform(y_train)
+                            y_test = label_encoder.transform(y_test)
+
+                            if models == 'Random Forest':
+                                y_pred = train_classification_model(rf_pipeline, X_train, y_train, X_test)
+
+                            elif models == 'Logistic Regression':
+                                y_pred = train_classification_model(lr_pipeline, X_train, y_train, X_test)
+
+                            elif models == 'K-Nearest Neighbors':
+                                y_pred = train_classification_model(knn_pipeline, X_train, y_train, X_test)
+
+                            st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
+                            st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
+                            report = classification_report(y_test, y_pred, output_dict=True)
+                            st.write(':blue[**Classification Report**] :')
+                            st.dataframe(pd.DataFrame(report).transpose())
+
+                        except ValueError as e:
+                            st.error(f"Error: Cannot preprocess the data: {e}")
 
                     else:
                         st.warning('Please select the target column and features.')
@@ -882,66 +909,78 @@ def model_building(data):
                         X = data[features]
                         y = data[target_column]
 
-                        if not X.empty and not y.empty:
-                            numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
-                            categorical_features = X.select_dtypes(include=['object']).columns
-                            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-                            _, reg_train, reg_test, _ = st.columns([0.1, 2, 2, 0.1])
-                            with st.container():
-                                with reg_train:
-                                    st.write(':blue[**Train Data**] :')
-                                    st.write(X_train)
-
-                                with reg_test:
-                                    st.write(':blue[**Test Data**] :')
-                                    st.write(X_test)
+                        # Handle NaN values in the target column
+                        if y.isnull().any():
+                            st.warning('The target column contains NaN values. Rows with NaN values is dropped.')
+                            data = data.dropna(subset=[target_column])
+                            X = data[features]
+                            y = data[target_column]
+                        
                         else:
-                            st.warning('The selected features and target column are empty.')
-                        
-                        # Define the ColumnTransformer with imputers, encoders, and scalers
-                        preprocessor_regressor = ColumnTransformer(
-                            transformers=[
-                                ('cat', Pipeline([
-                                    ('imputer', SimpleImputer(strategy='most_frequent')),
-                                    ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
-                                ]), categorical_features),
-                                ('num', Pipeline([
-                                    ('imputer', SimpleImputer(strategy='mean')),
-                                    ('scaler', StandardScaler())
-                                ]), numeric_features)
-                            ],
-                            remainder='passthrough'  # Keep the rest of the columns as they are
-                        )
+                            pass
 
-                        # Create a pipeline for the regression model
-                        rf_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_regressor),
-                            ('regressor', RandomForestRegressor())
-                        ])
+                        try:
+                            if not X.empty and not y.empty:
+                                numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+                                categorical_features = X.select_dtypes(include=['object']).columns
+                                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-                        lr_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_regressor),
-                            ('regressor', LinearRegression())
-                        ])
+                                _, reg_train, reg_test, _ = st.columns([0.1, 2, 2, 0.1])
+                                with st.container():
+                                    with reg_train:
+                                        st.write(':blue[**Train Data**] :')
+                                        st.write(X_train)
 
-                        svm_pipeline = Pipeline([
-                            ('preprocessor', preprocessor_regressor),
-                            ('regressor', SVR())
-                        ])
-
-                        if models == 'Random Forest':
-                            y_pred = train_regression_model(rf_pipeline, X_train, y_train, X_test)
-
-                        elif models == 'Linear Regression':
-                            y_pred = train_regression_model(lr_pipeline, X_train, y_train, X_test)
-
-                        elif models == 'SVR':
-                            y_pred = train_regression_model(svm_pipeline, X_train, y_train, X_test)
-                        
-                        st.write(':blue[**Mean Squared Error**] :', mean_squared_error(y_test, y_pred))
-                        st.write(':blue[**R2 Score**] :', r2_score(y_test, y_pred))
+                                    with reg_test:
+                                        st.write(':blue[**Test Data**] :')
+                                        st.write(X_test)
                             
+                                # Define the ColumnTransformer with imputers, encoders, and scalers
+                                preprocessor_regressor = ColumnTransformer(
+                                    transformers=[
+                                        ('cat', Pipeline([
+                                            ('imputer', SimpleImputer(strategy='most_frequent')),
+                                            ('encoder', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
+                                        ]), categorical_features),
+                                        ('num', Pipeline([
+                                            ('imputer', SimpleImputer(strategy='mean')),
+                                            ('scaler', StandardScaler())
+                                        ]), numeric_features)
+                                    ],
+                                    remainder='passthrough'  # Keep the rest of the columns as they are
+                                )
+
+                                # Create a pipeline for the regression model
+                                rf_pipeline = Pipeline([
+                                    ('preprocessor', preprocessor_regressor),
+                                    ('regressor', RandomForestRegressor())
+                                ])
+
+                                lr_pipeline = Pipeline([
+                                    ('preprocessor', preprocessor_regressor),
+                                    ('regressor', LinearRegression())
+                                ])
+
+                                svm_pipeline = Pipeline([
+                                    ('preprocessor', preprocessor_regressor),
+                                    ('regressor', SVR())
+                                ])
+
+                                if models == 'Random Forest':
+                                    y_pred = train_regression_model(rf_pipeline, X_train, y_train, X_test)
+
+                                elif models == 'Linear Regression':
+                                    y_pred = train_regression_model(lr_pipeline, X_train, y_train, X_test)
+
+                                elif models == 'SVR':
+                                    y_pred = train_regression_model(svm_pipeline, X_train, y_train, X_test)
+                                
+                                st.write(':blue[**Mean Squared Error**] :', mean_squared_error(y_test, y_pred))
+                                st.write(':blue[**R2 Score**] :', r2_score(y_test, y_pred))
+                            
+                        except ValueError as e:
+                            st.error(f"Error: Cannot preprocess the data: {e}")
+
                     else:
                         st.warning('Please select the target column and features.')
 
@@ -955,52 +994,62 @@ def model_building(data):
                     if target_column != None:
                         feature = st.selectbox(':blue[**Select the feature column**] :', [None] + list(data.columns))
                         if feature != None and data[feature].dtype == 'object':
-                            X, y = preprocess_text_data(data, feature, target_column)
-                            # Ensure the target variable is discrete for classification models
-                            if pd.api.types.is_numeric_dtype(y) and y.dtype == float:
-                                y = y.astype('category').cat.codes
+                            try:
+                                X, y = preprocess_text_data(data, feature, target_column)
 
-                            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                                if X.size > 0 and y.size > 0:
+                                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-                            _, nlp_train, nlp_test,_ = st.columns([0.1, 2, 2, 0.1])
-                            with nlp_train:
-                                st.write(':blue[**Train Data**] :')
-                                st.write(X_train)
+                                    _, nlp_train, nlp_test, _ = st.columns([0.1, 2, 2, 0.1])
+                                    with nlp_train:
+                                        st.write(':blue[**Train Data**] :')
+                                        st.write(X_train)
 
-                            with nlp_test:
-                                st.write(':blue[**Test Data**] :')
-                                st.write(X_test)
+                                    with nlp_test:
+                                        st.write(':blue[**Test Data**] :')
+                                        st.write(X_test)
+                                    
+                                else:
+                                    pass
 
-                            # create a pipeline for the nlp model
-                            lr_pipeline = Pipeline([
-                                ('preprocessor', TfidfVectorizer()),
-                                ('classifier', LogisticRegression())
-                            ])
+                                # create a pipeline for the nlp model
+                                lr_pipeline = Pipeline([
+                                    ('preprocessor', TfidfVectorizer()),
+                                    ('classifier', LogisticRegression())
+                                ])
 
-                            rf_pipeline = Pipeline([
-                                ('preprocessor', TfidfVectorizer()),
-                                ('classifier', RandomForestClassifier())
-                            ])
+                                rf_pipeline = Pipeline([
+                                    ('preprocessor', TfidfVectorizer()),
+                                    ('classifier', RandomForestClassifier())
+                                ])
 
-                            naive_bayes_pipeline = Pipeline([
-                                ('preprocessor', TfidfVectorizer()),
-                                ('classifier', MultinomialNB())
-                            ])
+                                naive_bayes_pipeline = Pipeline([
+                                    ('preprocessor', TfidfVectorizer()),
+                                    ('classifier', MultinomialNB())
+                                ])
 
-                            if models == 'Logistic Regression':
-                                y_pred = train_nlp_model(lr_pipeline, X_train, y_train, X_test)
+                                if models == 'Logistic Regression':
+                                    y_pred = train_nlp_model(lr_pipeline, X_train, y_train, X_test)
 
-                            elif models == 'Random Forest':
-                                y_pred = train_nlp_model(rf_pipeline, X_train, y_train, X_test)
+                                elif models == 'Random Forest':
+                                    y_pred = train_nlp_model(rf_pipeline, X_train, y_train, X_test)
 
-                            elif models == 'Multinomial Naive Bayes':
-                                y_pred = train_nlp_model(naive_bayes_pipeline, X_train, y_train, X_test)
+                                elif models == 'Multinomial Naive Bayes':
+                                    y_pred = train_nlp_model(naive_bayes_pipeline, X_train, y_train, X_test)
 
-                            st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
-                            st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
-                            st.write(':blue[**Classification Report**] :')
-                            report = classification_report(y_test, y_pred, output_dict=True)
-                            st.dataframe(pd.DataFrame(report).transpose())
+                                st.write(':blue[**Accuracy**] :', accuracy_score(y_test, y_pred))
+                                # show the real and predicted values in a dataframe
+                                st.write(':blue[**Real and Predicted Values**] :')
+                                values = pd.DataFrame({'Real Values': y_test, 'Predicted Values': y_pred})
+                                st.write(values)
+                                st.write(':blue[**Confusion Matrix**] :', confusion_matrix(y_test, y_pred))
+                                st.write(':blue[**Classification Report**] :')
+                                report = classification_report(y_test, y_pred, output_dict=True)
+                                st.dataframe(pd.DataFrame(report).transpose())
+
+                            except ValueError as e:
+                                st.error(f"Error: Cannot preprocess the text data: {e}")
+                            
                         else:
                             st.info('Please select a text feature.')
                     else:
@@ -1030,6 +1079,10 @@ uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
 if uploaded_file is not None:
     data = load_data(uploaded_file)
 
+    # show the original data at the beginning
+    original_data.write(data)
+
+
     # Tabs for different sections
     tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
 
@@ -1037,9 +1090,6 @@ if uploaded_file is not None:
         show_data_overview(data)
 
     with tab2:
-        # create a placeholder to show the data after handling missing values
-        with st.expander('Cleaned Data', expanded=False):
-            show_data= st.empty()
         display_and_download_cleaned_data(data)
 
     with tab3:
