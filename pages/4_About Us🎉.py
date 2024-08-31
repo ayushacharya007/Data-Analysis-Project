@@ -1,11 +1,12 @@
 import streamlit as st
+from feedback import main
 st.header("About Our App")
 st.markdown('---')
 
-st.markdown('''Welcome to our advanced data analysis platform, expertly crafted to streamline your data processes and enhance your insights. Whether you're looking to analyze complex datasets, clean and prepare your data, or visualize trends, our app has you covered.''')
+st.markdown('''**Welcome to our advanced data analysis platform, expertly crafted to streamline your data processes and enhance your insights. Whether you're looking to analyze complex datasets, clean and prepare your data, or visualize trends, our app has you covered.**''')
 
 st.markdown('''
-Key features include:
+:green[Key features include] :
 
 - <span style="color:DodgerBlue">Data Analysis & Cleaning:</span> Efficiently handle large datasets and prepare them for deeper insights.
          
@@ -17,13 +18,25 @@ Key features include:
          
 - <span style="color:DodgerBlue">Sentiment Analysis:</span> Input your CSV files or text for accurate sentiment predictions and responses using a robust pre-trained model.
 
-- <span style="color:DodgerBlue">Chat with GPT:</span> Chat with GPT-3.5, GPT-4, or GPT-4 Turbo to generate responses, answer questions, and more.<br>:green[**Note**] : <span style="color:red"> This feature requires an OpenAI API key.</span>
+- <span style="color:DodgerBlue">Chat with GPT:</span> Chat with GPT-3.5, GPT-4, or GPT-4 Turbo to generate responses, answer questions, and more.<br>:red[**Note**] : <span style="color: Violet"> This feature requires an OpenAI API key.</span>
 
          
-Our app is designed to make data analysis and machine learning more accessible and effective, providing you with the tools you need to turn data into actionable insights.
+**Our app is designed to make data analysis and machine learning more accessible and effective, providing you with the tools you need to turn data into actionable insights.**
 ''', unsafe_allow_html=True)
 
-for i in range(4):
+for i in range(1):
     st.write('')
 
 st.markdown("**Created by Ayush Acharya**", unsafe_allow_html=True)
+
+for i in range(1):
+    st.write('')
+
+if 'feedback' not in st.session_state:
+    st.session_state.feedback = False
+
+if st.button("Feedback"):
+    st.session_state.feedback = True
+
+if st.session_state.feedback:
+    main()
