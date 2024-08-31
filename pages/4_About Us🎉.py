@@ -36,7 +36,7 @@ if 'feedback' not in st.session_state:
     st.session_state.feedback = False
 
 if st.button("Feedback"):
-    st.session_state.feedback = True
+    st.session_state.feedback = not st.session_state.feedback
 
 if st.session_state.feedback:
     main()

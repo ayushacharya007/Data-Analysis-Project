@@ -29,7 +29,7 @@ def feedback_form():
     name = st.text_input(":blue[Name] :red[*] :")
     email = st.text_input(":blue[Email] :")
     feedback = st.text_input(":blue[Feedback]  :red[*] :")
-    rating = st.number_input(":blue[Rating (1-5)] :red[*] :", min_value=1, max_value=5)
+    rating = st.number_input(":blue[Rating] :red[*] :", min_value=1, max_value=5)
 
     submit = st.button("Submit")    
     if submit:
