@@ -476,7 +476,7 @@ def replace_values(data):
                         except Exception as e:
                             st.error(f'An error occurred: {e}')
                 else:
-                    st.warning('No Null Values to write in ":blue[{column}]"')    
+                    st.warning(f'No Null Values to write in ":blue[{column}]"')    
             # show_data.write(data)
         else:
             st.warning('Please select columns to fill')
