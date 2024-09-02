@@ -19,3 +19,5 @@ tensorflow
 matplotlib
 tf-keras
 openpyxl
+textblob
+vaderSentiment

@@ -81,7 +81,7 @@ def handle_prompt(agent):
 def main():
     api_key = get_api_key()
     if not api_key:
-        st.warning("Please enter your OpenAI API Key to chat with the bot.")
+        st.info("Please enter your OpenAI API Key to chat with the bot.")
         return
 
     model = select_model()

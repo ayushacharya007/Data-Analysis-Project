@@ -27,17 +27,6 @@ import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.impute import SimpleImputer
-# try:
-#     import spacy
-#     nlp = spacy.load('en_core_web_sm')
-# except Exception as e:
-#     os.system('python -m spacy download en_core_web_sm')
-#     import spacy
-#     nlp = spacy.load('en_core_web_sm')
-# nltk.download('wordnet')
-# from nltk.corpus import stopwords
-# from nltk.stem import WordNetLemmatizer
-
 
 st.set_page_config(page_title="Data Analysis", page_icon="📊", layout="wide")
 
@@ -59,16 +48,18 @@ def load_data(file):
                 for encoding in csv_encoding:
                     try:
                         data = pd.read_csv(file, encoding=encoding)
-                        break
+                        return data  # Return data immediately if read successfully
                     except Exception as e:
-                        pass
+                        continue
+                st.error("Failed to load the file with all attempted encodings.")
+                return None
             else:
                 st.error("Unsupported file format")
                 return None
         except Exception as e:
             st.error(f"Error loading file: {e}")
             return None
-        return data
+    return None  # Return None if file is None
 
 
 def correct_data_types(data):
@@ -335,300 +326,282 @@ def show_data_overview(data):
                             data_overview(data)
     else:
         st.warning("Please select or upload a file.")
-        
 
-def show_missing(data):
-    missing_values = data.isnull().sum()
-    missing_percentage = missing_values / data.shape[0] * 100
-    missing_info = pd.DataFrame({
-        'Missing Values': missing_values.values, 
-        'Percentage %': missing_percentage.values
-    }, index=data.columns)
-    missing_info.index.name = 'Columns'  # Set the index title
-    with st.expander('Show Missing Values', expanded=False):
-        st.dataframe(missing_info)
+def data_cleaning(data):
 
-def drop_columns(data):
+    def show_missing(data):
+        missing_values = data.isnull().sum()
+        missing_percentage = missing_values / data.shape[0] * 100
+        missing_info = pd.DataFrame({
+            'Missing Values': missing_values.values, 
+            'Percentage %': missing_percentage.values
+        }, index=data.columns)
+        missing_info.index.name = 'Columns'  # Set the index title
+        with st.expander('Show Missing Values', expanded=False):
+            st.dataframe(missing_info)
 
-    if 'drop_columns' not in st.session_state:
-        st.session_state.drop_columns = False
+    def drop_columns(data):
 
-    if st.button('Drop the column'):
-        st.session_state.drop_columns = not st.session_state.drop_columns
+        if 'drop_columns' not in st.session_state:
+            st.session_state.drop_columns = False
 
-    if st.session_state.drop_columns:
-        selected_columns = st.multiselect(':blue[**Select the columns you want to drop**] :', data.columns)
-        if selected_columns:
-            data = data.drop(selected_columns, axis=1)
-            st.success('Selected columns dropped successfully.')
-        else:
-            st.info('No columns selected for dropping.')
-    return data
+        if d_column.button('Drop the column', use_container_width=True):
+            st.session_state.drop_columns = not st.session_state.drop_columns
 
-def drop_data(data):
+        if st.session_state.drop_columns:
+            selected_columns = st.multiselect(':blue[**Select the columns you want to drop**] :', data.columns)
+            if selected_columns:
+                data = data.drop(selected_columns, axis=1)
+                st.success('Selected columns dropped successfully.')
 
-    if 'drop_data' not in st.session_state:
-        st.session_state.drop_data = False
+            st.write('---')
 
-    if st.button('Drop the data'):
-        st.session_state.drop_data = not st.session_state.drop_data
+        return data
 
-    if st.session_state.drop_data:
-        null_counts = data.isnull().sum()
-        columns_with_nulls = null_counts[null_counts > 0]
-        if columns_with_nulls.empty:
-            st.info('No null values to drop.')
-        else:
-            data = data.dropna()
-            formatted_columns = ', '.join([f'{col} ({count})' for col, count in columns_with_nulls.items()])
-            st.success(f'Rows with null values have been removed successfully from columns: :blue[{formatted_columns}]')
-    return data
+    def drop_data(data):
 
-# def fill_data(data):
+        if 'drop_data' not in st.session_state:
+            st.session_state.drop_data = False
 
-#     if 'fill_data' not in st.session_state:
-#         st.session_state.fill_data = False
+        if d_data.button('Drop the data', use_container_width=True):
+            st.session_state.drop_data = not st.session_state.drop_data
 
-#     if st.button('Fill data'):
-#         st.session_state.fill_data = not st.session_state.fill_data
-
-#     if st.session_state.fill_data:
-#         # Let the user select the columns to fill
-#         columns = st.multiselect(':blue[**Select columns to fill**] :', data.columns)
-
-#         if columns:
-#             for column in columns:
-#                 if data[column].isnull().any():
-#                     user_input = st.text_input(label=f'Enter value for column {column}', key=f'input_{column}')
-#                     if user_input:
-#                         data_type = st.selectbox(f':blue[**Select data type for column : :green[{column}]**]', ['None', 'int', 'float', 'object', 'datetime'], key=f'dtype_{column}')
-#                         if data_type != 'None':
-#                             try:
-#                                 if data_type == 'int':
-#                                     data[column] = data[column].fillna(int(user_input)).astype(int)
-#                                 elif data_type == 'float':
-#                                     data[column] = data[column].fillna(float(user_input)).astype(float)
-#                                 elif data_type == 'object':
-#                                     data[column] = data[column].fillna(str(user_input)).astype(str)
-#                                 elif data_type == 'datetime':
-#                                     data[column] = data[column].fillna(pd.to_datetime(user_input, errors='coerce')).astype('datetime64[ns]')
-#                                 st.write(f'Missing values have been filled successfully in column: {column} with data type: {data_type}')
-#                             except Exception as e:
-#                                 st.error(f"Error converting column {column} to {data_type}: {e}")
-#                         else:
-#                             st.info('Please select a data type to convert')
-#                 else:
-#                     st.info(f'The column "{column}" does not have any null values.')
-
-#             show_data.write(data)
-#         else:
-#             st.warning('Please select columns to fill')
-
-#         st.write(data)
-#     return data
-
-def replace_values(data):
-    if 'replace_data' not in st.session_state:
-        st.session_state.replace_data = False
-
-    if st.button('Replace values'):
-        st.session_state.replace_data = not st.session_state.replace_data
-
-    if st.session_state.replace_data:
-        st.info('Only use mean and median with numerical data type.')
-        columns = st.multiselect(':blue[**Select columns to fill**] :', data.columns)
-
-        if columns:
-            for column in columns:
-                selected_method = st.selectbox(f':blue[**Select filling method for column**] : :green[{column}]', ['None', 'Mean', 'Mode', 'Median', 'Custom Value'], key=f'method_{column}')
-
-                if selected_method == 'None':
-                    st.warning(f'Please select a filling method for column :blue[{column}]')
-                elif data[column].isnull().any():
-                    if selected_method == 'Custom Value':
-                        user_input = st.text_input(label=f':blue[**Enter value for column**] : :green[{column}]', key=f'input_{column}')
-                        if user_input:
-                            try:
-                                data[column] = data[column].fillna(user_input)
-                                st.success(f'Missing values have been filled successfully in column ":blue[{column}]"')
-                            except Exception as e:
-                                st.error(f'Error converting column ":blue[{column}]" to ":green[{data[column].dtype}]": {e}')
-                    elif selected_method in ['Mean', 'Mode', 'Median']:
-                        try:
-                            if selected_method == 'Mean':
-                                if data[column].dtype in ['int64', 'float64']:
-                                    mean = data[column].mean()
-                                    st.write(f'**The mean for the ":blue[{column}]" column is :green[{mean}]**.')
-                                    data[column] = data[column].fillna(mean)
-                                else:
-                                    st.error(f'Cannot calculate mean for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
-                            elif selected_method == 'Mode':
-                                mode = data[column].mode()[0]
-                                st.write(f'The mode for the ":blue[{column}]" column is :green[{mode}].')
-                                data[column] = data[column].fillna(mode)
-                            elif selected_method == 'Median':
-                                if data[column].dtype in ['int64', 'float64']:
-                                    median = data[column].median()
-                                    st.write(f'The median for the ":blue[{column}]" column is :green[{median}].')
-                                    data[column] = data[column].fillna(median)
-                                else:
-                                    st.error(f'Cannot calculate median for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
-                        except Exception as e:
-                            st.error(f'An error occurred: {e}')
-                else:
-                    st.warning(f'No Null Values to write in ":blue[{column}]"')    
-            # show_data.write(data)
-        else:
-            st.warning('Please select columns to fill')
-    return data
-
-# def encode_data(data):
-#     if st.session_state.show_missing:
-#         if 'handle_missing' not in st.session_state:
-#             st.session_state.handle_missing = False
-
-#         if st.button('Encoding', use_container_width=True):
-#             st.session_state.handle_missing = not st.session_state.handle_missing
-
-#         if st.session_state.handle_missing:
-#             st.write('Select the columns you want to encode')
-#             selected_columns = st.multiselect('Columns', data.columns, key='encoding')
-#             st.write('Selected Columns:')
-#             selected_columns
-#             encoding_type = st.selectbox('Select encoding type', ['One-Hot Encoding', 'Label Encoding'])
-#             if encoding_type == 'One-Hot Encoding':
-#                 data = pd.get_dummies(data, columns=selected_columns)
-#             elif encoding_type == 'Label Encoding':
-#                 for col in selected_columns:
-#                     le = LabelEncoder()
-#                     data[col] = le.fit_transform(data[col])
-#             st.write(data)
-#     return data
-
-def missing_values(data):
-    show_missing(data)
-    with st.expander('Select methods to handle null', expanded=False):
-        data = drop_columns(data)
-        data = drop_data(data)
-        data = replace_values(data)
-    # data = encode_data(data)
-    return data
-
-def check_duplicates(data):
-    # count the total duplicated rows
-    duplicated_rows = data.duplicated().sum()
-    # show the duplicated rows
-    duplicated_rows = data[data.duplicated(keep=False)]
-    duplicated_rows_sorted = duplicated_rows.sort_values(by=data.columns.tolist())
-    with st.expander('Show Duplicated Rows', expanded=False):
-        if duplicated_rows.shape[0] > 0:
-            st.write(f':blue[**Total duplicated rows**] : :green[{duplicated_rows.shape[0]}]')
-            st.write(duplicated_rows_sorted)
-            st.write('')
-        else:
-            st.info('No duplicated rows found. The dataset is clean.')
-
-        for i in range(2):
-            st.write('')
-    
-        selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
-
-        if selected_columns:  # Ensure there's at least one column selected
-            # Adjusted to include keep=False to mark all duplicates as True
-            duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
-            # Join the selected_columns list into a string separated by commas
-            columns_str = ', '.join(selected_columns)
-            st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
-            # Adjusted to include keep=False to get all duplicated rows
-            duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
-            # Sort the duplicated rows by the selected columns to display them one above the other
-            duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
-            # Display only the selected columns
-            
-            st.write(duplicated_rows_sorted[selected_columns])
-        else:
-            st.info('Please select columns to check for duplicated values.')
-    
-    return data
-
-def remove_duplicates_whole(data):
-
-# create a button to remove the duplicated rows
-    if 'remove_duplicates_whole' not in st.session_state:
-        st.session_state.remove_duplicates_whole = False
-
-    if st.button('Remove Duplicates (Whole)'):
-        st.session_state.remove_duplicates_whole = not st.session_state.remove_duplicates_whole
-
-    if st.session_state.remove_duplicates_whole:
-        # check if there are duplicated rows
-        if data.duplicated().any():
-            # remove the duplicated rows
-            data = data.drop_duplicates().reset_index(drop=True)
-            # show_data.write(data)
-            st.info(f'Duplicates have been removed successfully. The length of the data frame is :green[{len(data)}] after removing the duplicates.')
-        else:
-            st.info('No duplicated values to remove.')
-    return data
-
-def remove_duplicates_selected(data):
-    if 'remove_duplicates_selected' not in st.session_state:
-            st.session_state.remove_duplicates_selected = False
-
-    if st.button('Remove Duplicates (Selected Columns)'):
-        st.session_state.remove_duplicates_selected = not st.session_state.remove_duplicates_selected
-
-    if st.session_state.remove_duplicates_selected:
-        # check if there are duplicated rows based on selected columns
-        selected_columns = st.multiselect(':blue[**Select the columns to remove duplicates**] :', data.columns)
-        if selected_columns:
-            if data.duplicated(subset=selected_columns).any():
-                # remove the duplicated rows based on selected columns
-                data = data.drop_duplicates(subset=selected_columns).reset_index(drop=True)
-                # show_data.write(data)
-                st.info(f'Duplicates have been removed successfully for selected columns. The length of the data frame is :green[{len(data)}] after removing the duplicates for selected columns.')
+        if st.session_state.drop_data:
+            null_counts = data.isnull().sum()
+            columns_with_nulls = null_counts[null_counts > 0]
+            if columns_with_nulls.empty:
+                st.info('No null values to drop.')
             else:
-                st.info('No duplicated values to remove for selected columns.')
-                
-    return data
+                data = data.dropna()
+                formatted_columns = ', '.join([f'{col} ({count})' for col, count in columns_with_nulls.items()])
+                st.success(f'Rows with null values have been removed successfully from columns: :blue[{formatted_columns}]')
 
+            st.write('---')
 
-def duplicated_values(data):
-    check_duplicates(data)
-    with st.expander('Select methods to handle duplicates', expanded=False):
+        return data
+
+    def replace_values(data):
+        if 'fill_data' not in st.session_state:
+            st.session_state.fill_data = False
+
+        if r_data.button('Fill values', use_container_width=True):
+            st.session_state.fill_data = not st.session_state.fill_data
+
+        if st.session_state.fill_data:
+            # st.info('Only use mean and median with numerical data type.')
+            columns = st.multiselect(':blue[**Select columns to fill**] :', data.columns)
+
+            if columns:
+                for column in columns:
+                    if data[column].isnull().any():
+                        selected_method = st.selectbox(
+                            f':blue[**Select the method to fill missing values for column**] : :green[{column}]',
+                            ['None', 'Custom Value', 'Mean', 'Mode', 'Median'],
+                            key=f'select_{column}'
+                        )
+
+                        if selected_method == 'None':
+                            st.info(f'Please select a filling method for column :blue[{column}]')
+                        elif selected_method == 'Custom Value':
+                            user_input = st.text_input(label=f':blue[**Enter value for column**] : :green[{column}]', key=f'input_{column}')
+                            if user_input:
+                                try:
+                                    # Check if the entered value matches the column's data type
+                                    if data[column].dtype == 'float64' or data[column].dtype == 'int64':
+                                        # Try to convert the user input to a number
+                                        user_input = float(user_input)
+                                    elif data[column].dtype == 'datetime64[ns]':
+                                        # Try to convert the user input to a datetime
+                                        user_input = pd.to_datetime(user_input)
+                                    elif data[column].dtype == 'object':
+                                        # For object type, no conversion needed
+                                        user_input = str(user_input)
+                                    else:
+                                        raise ValueError("Unsupported data type")
+
+                                    # Fill the missing values
+                                    data[column] = data[column].fillna(user_input)
+                                    st.success(f'Missing values have been filled successfully in column ":blue[{column}]"')
+                                except ValueError as ve:
+                                    st.error(f'An error occurred: {ve}')
+                                except Exception as e:
+                                    st.error(f'An error occurred: {e}')
+                            else:
+                                st.info('Please enter a value to fill the missing values.')
+                        elif selected_method in ['Mean', 'Mode', 'Median']:
+                            try:
+                                if selected_method == 'Mean':
+                                    if data[column].dtype in ['int64', 'float64']:
+                                        mean = data[column].mean()
+                                        st.success(f'Successfully filled missing values with mean value :blue[{mean}]')
+                                        data[column] = data[column].fillna(mean)
+                                    else:
+                                        st.error(f'Cannot calculate mean for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
+                                elif selected_method == 'Mode':
+                                    mode = data[column].mode()[0]
+                                    st.success(f'Successfully filled missing values with mode value :blue[{mode}]')
+                                    data[column] = data[column].fillna(mode)
+                                elif selected_method == 'Median':
+                                    if data[column].dtype in ['int64', 'float64']:
+                                        median = data[column].median()
+                                        st.success(f'Successfully filled missing values with median value :blue[{median}]')
+                                        data[column] = data[column].fillna(median)
+                                    else:
+                                        st.error(f'Cannot calculate median for column ":blue[{column}]" with ":green[{data[column].dtype}]" data type.')
+                            except Exception as e:
+                                st.error(f'An error occurred: {e}')
+                    else:
+                        st.info(f'No Null Values in column ":blue[{column}]"')
+        return data
+
+    def missing_values(data):
+        data = drop_columns(data)
+
+        data = drop_data(data)
+
+        data = replace_values(data)
+        # data = encode_data(data)
+        return data
+
+    def check_duplicates(data):
+        # count the total duplicated rows
+        duplicated_rows = data.duplicated().sum()
+        # show the duplicated rows
+        duplicated_rows = data[data.duplicated(keep=False)]
+        duplicated_rows_sorted = duplicated_rows.sort_values(by=data.columns.tolist())
+        with st.expander('Show Duplicated Rows', expanded=False):
+            if duplicated_rows.shape[0] > 0:
+                st.write(f':blue[**Total duplicated rows**] : :green[{duplicated_rows.shape[0]}]')
+                st.write(duplicated_rows_sorted)
+                st.write('')
+            else:
+                st.info('No duplicated rows found. The dataset is clean.')
+
+            for i in range(2):
+                st.write('')
+
+            selected_columns = st.multiselect(':blue[**Select the columns you want to see the duplicated values**] :', data.columns, key='duplicate_check')
+
+            if selected_columns:  # Ensure there's at least one column selected
+                # Adjusted to include keep=False to mark all duplicates as True
+                duplicated_rows_count = data.duplicated(subset=selected_columns, keep=False).sum()
+                # Join the selected_columns list into a string separated by commas
+                columns_str = ', '.join(selected_columns)
+                st.write(f"**Total duplicated rows in :green[{columns_str}] column is: :blue[{duplicated_rows_count}]**")
+                # Adjusted to include keep=False to get all duplicated rows
+                duplicated_rows = data[data.duplicated(subset=selected_columns, keep=False)]
+                # Sort the duplicated rows by the selected columns to display them one above the other
+                duplicated_rows_sorted = duplicated_rows.sort_values(by=selected_columns)
+                # Display only the selected columns
+
+                st.write(duplicated_rows_sorted[selected_columns])
+            else:
+                st.info('Please select columns to check for duplicated values.')
+
+        return data
+
+    def remove_duplicates_whole(data):
+
+        # create a button to remove the duplicated rows
+        if 'remove_duplicates_whole' not in st.session_state:
+            st.session_state.remove_duplicates_whole = False
+
+        if r_whole.button('Remove Duplicates (Whole)', use_container_width=True):
+            st.session_state.remove_duplicates_whole = not st.session_state.remove_duplicates_whole
+
+        if st.session_state.remove_duplicates_whole:
+            # check if there are duplicated rows
+            if data.duplicated().any():
+                # remove the duplicated rows
+                data = data.drop_duplicates().reset_index(drop=True)
+                # show_data.write(data)
+                st.success(f'The length of the data frame is :green[{len(data)}] after removing the duplicates.')
+            else:
+                st.info('No duplicated values to remove.')
+        return data
+
+    def remove_duplicates_selected(data):
+        if 'remove_duplicates_selected' not in st.session_state:
+                st.session_state.remove_duplicates_selected = False
+
+        if r_selected.button('Remove Duplicates (Selected Columns)', use_container_width=True):
+            st.session_state.remove_duplicates_selected = not st.session_state.remove_duplicates_selected
+
+        if st.session_state.remove_duplicates_selected:
+            # check if there are duplicated rows based on selected columns
+            selected_columns = st.multiselect(':blue[**Select the columns to remove duplicates**] :', data.columns)
+            if selected_columns:
+                if data.duplicated(subset=selected_columns).any():
+                    # remove the duplicated rows based on selected columns
+                    data = data.drop_duplicates(subset=selected_columns).reset_index(drop=True)
+                    # show_data.write(data)
+                    st.success(f'The length of the data frame is :green[{len(data)}] after removing the duplicates for selected columns.')
+                else:
+                    st.info('No duplicated values to remove for selected columns.')
+
+        return data
+
+    def duplicated_values(data):
         data = remove_duplicates_whole(data)
         data = remove_duplicates_selected(data)
-    return data
+        return data
 
-def display_and_download_cleaned_data(data):
     if data is not None:
-        # Apply data cleaning steps
+
         with st.expander('Show Modified/Cleaned Data', expanded=False):
             show_data = st.empty()
-        missing, duplicated, download_csv=st.tabs(['Missing Values', 'Duplicated Values', 'Download Cleaned Data'])
-        
-        with  st.container():
-            with missing:  
-                data = missing_values(data)
-                show_data.write(data)
-                
-            with duplicated:
-                data = duplicated_values(data)
-                show_data.write(data)
-            
-            with download_csv:
-                if data is not None:
-                    # Convert DataFrame to CSV, then encode to UTF-8 bytes
-                    csv = data.to_csv(index=False).encode('utf-8')
-                    download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
-                    if download:
-                        # write a message to the user when the data is downloaded
-                        st.write(':green[**Downladed the cleaned data successfully.**]')
-                else:
-                    st.warning("Data is not available for download.")
-    else:
-        st.warning("Please select or upload a file.")
 
+        # create a radio button to select the operation
+        operation = st.radio(':blue[Select the options to clean the data] :', ['None', 'Missing Values', 'Duplicated Values', 'Download CSV'], horizontal=True)
+        if operation == 'Missing Values':
+            show_missing(data)
+            for i in range(1):
+                st.write('')
+
+            st.write(':blue[**Select the methods to handle missing values**] :')
+
+            d_column , d_data, r_data = st.columns(3, gap='large', vertical_alignment='center')
+            
+            for i in range(1):
+                st.write('')
+
+            data = missing_values(data)
+            show_data.write(data)
+            
+        elif operation == 'Duplicated Values':
+            check_duplicates(data)
+            for i in range(1):
+                st.write('')
+
+            st.write(':blue[**Select the methods to handle duplicated values**] :')
+            
+            r_whole, r_selected = st.columns(2, gap='large', vertical_alignment='center')
+            
+            for i in range(1):
+                st.write('')
+
+            data = duplicated_values(data)
+            show_data.write(data)
+        
+        elif operation == 'Download CSV':
+            if data is not None:
+                # Convert DataFrame to CSV, then encode to UTF-8 bytes
+                csv = data.to_csv(index=False).encode('utf-8')
+                download= st.download_button(label='Download Cleaned CSV', data=csv, file_name='cleaned_data.csv', mime='text/csv', use_container_width=True)
+                if download:
+                    # write a message to the user when the data is downloaded
+                    st.success('Data downloaded successfully.')
+            else:
+                st.warning("Data is not available for download.")
+        else:
+            st.info('Please select an operation to clean the data.')
+
+    else:
+        st.info("Please select or upload a file.")
+
+
+
+    return data
 
 @st.cache_data
 def get_available_plot_types(x_dtype, y_dtype, x_axis, y_axis):
@@ -748,7 +721,7 @@ def display_visualizations(data):
                 else:
                     st.warning("Please select a valid plot type.")
             else:
-                st.warning("Please select both x-axis and y-axis values.")
+                st.info("Please select both x-axis and y-axis values for visualization.")
         else:
             st.warning("No data available for visualization.")
     else:
@@ -894,13 +867,27 @@ def model_building(data):
                             st.write(':blue[**Classification Report**] :')
                             st.dataframe(pd.DataFrame(report).transpose())
 
+                            # save the model
+                            save_model = joblib.dump(models, 'model.pkl')
+
+                            # Read the saved model file in binary mode
+                            with open('model.pkl', 'rb') as file:
+                                model_data = file.read()
+
+                            # Let the user download the model
+                            if model_data is not None:
+                                st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream',key='classification_model')
+
+                            else:
+                                st.info('No model available to download.')
+
                         except ValueError as e:
                             st.error(f"Error: Cannot preprocess the data: {e}")
 
                     else:
-                        st.warning('Please select the target column and features.')
+                        st.info('Please select the target column and features.')
                 else: 
-                    st.warning('Please select a model.')
+                    st.info('Please select a model.')
 
             elif problem_type == 'Regression':
                 models = st.radio(':blue[**Select the models**] :', ['None','Random Forest', 'Linear Regression', 'SVR'])
@@ -979,15 +966,30 @@ def model_building(data):
                                 
                                 st.write(':blue[**Mean Squared Error**] :', mean_squared_error(y_test, y_pred))
                                 st.write(':blue[**R2 Score**] :', r2_score(y_test, y_pred))
+
+                                # save the model
+                                save_model = joblib.dump(models, 'model.pkl')
+
+                                # Read the saved model file in binary mode
+                                with open('model.pkl', 'rb') as file:
+                                    model_data = file.read()
+
+                                # Let the user download the model
+                                if model_data is not None:
+                                    st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream',key='regression_model')
+
+                                else:
+                                    st.info('No model available to download.')
+
                             
                         except ValueError as e:
                             st.error(f"Error: Cannot preprocess the data: {e}")
 
                     else:
-                        st.warning('Please select the target column and features.')
+                        st.info('Please select the target column and features.')
 
                 else:
-                    st.warning('Please select a model.')
+                    st.info('Please select a model.')
 
             elif problem_type == 'Sentiment Analysis':
                 models = st.radio(':blue[**Select the models**] :', ['None', 'Logistic Regression','Random Forest', 'Multinomial Naive Bayes'])
@@ -1049,31 +1051,31 @@ def model_building(data):
                                 report = classification_report(y_test, y_pred, output_dict=True)
                                 st.dataframe(pd.DataFrame(report).transpose())
 
+                                # save the model
+                                save_model = joblib.dump(models, 'model.pkl')
+
+                                # Read the saved model file in binary mode
+                                with open('model.pkl', 'rb') as file:
+                                    model_data = file.read()
+
+                                # Let the user download the model
+                                if model_data is not None:
+                                    st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream',key='sentiment_analysis_model')
+
+                                else:
+                                    st.info('No model available to download.')
+
                             except ValueError as e:
                                 st.error(f"Error: Cannot preprocess the text data: {e}")
                             
                         else:
                             st.info('Please select a text feature.')
                     else:
-                        st.warning('Please select a target column.')
+                        st.info('Please select a target column.')
                 else:
-                    st.warning('Please select a model.')
-            
-            # save the model
-            save_model = joblib.dump(models, 'model.pkl')
-
-            # Read the saved model file in binary mode
-            with open('model.pkl', 'rb') as file:
-                model_data = file.read()
-
-            # Let the user download the model
-            if model_data is not None:
-                st.download_button(label='Download Model', data=model_data, file_name='model.pkl', mime='application/octet-stream')
-        else:
-            st.warning('Please select a problem type to do the analysis.')
-
+                    st.info('Please select a model.')
     else:
-        st.warning('Please select or upload a file.')
+        st.info('Please select or upload a file.')
 
 # Add file uploader and file selector to the sidebar
 uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
@@ -1081,22 +1083,24 @@ uploaded_file = st.sidebar.file_uploader('Upload your CSV file', type=['csv'])
 if uploaded_file is not None:
     data = load_data(uploaded_file)
 
-    with st.expander("View Original Data", expanded=False):
-        original_data = st.write(data)
+    if data is not None:
 
-    # Tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
+        with st.expander("View Original Data", expanded=False):
+            original_data = st.write(data)
 
-    with tab1:
-        show_data_overview(data)
+        # Tabs for different sections
+        tab1, tab2, tab3, tab4 = st.tabs(['Data Overview', 'Data Cleaning', 'Visualizations', 'Model Building'])
 
-    with tab2:
-        display_and_download_cleaned_data(data)
+        with tab1:
+            show_data_overview(data)
 
-    with tab3:
-        display_visualizations(data)
-    with tab4:
-        model_building(data)
+        with tab2:
+            data_cleaning(data)
+
+        with tab3:
+            display_visualizations(data)
+        with tab4:
+            model_building(data)
 else:
-    st.warning('Please upload a file to get started.')
+    st.info('Please upload a file to get started.')
         

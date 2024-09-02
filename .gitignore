@@ -15,6 +15,7 @@ pandasai.log
 .devcontainer/
 app_feedback
 
+
 .venv/
 
 *.pkl
