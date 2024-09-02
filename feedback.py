@@ -12,8 +12,9 @@ def save_feedback(name, email, feedback, rating):
 # Validate email format
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$'
-    return re.match(pattern, email) is not None
-
+    if re.match(pattern, email):
+        return True
+    return False
 # Create a feedback form
 def feedback_form():
     st.write("*Feedback Form*")
