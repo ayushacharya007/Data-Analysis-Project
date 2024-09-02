@@ -4,7 +4,6 @@ plotly
 streamlit
 wordcloud
 scikit-learn
-spacy
 langchain
 langchain-openai
 langchain_experimental
@@ -12,12 +11,7 @@ python-dotenv
 openai
 tabulate
 unstructured
-langchain-chroma
 seaborn
-transformers
-tensorflow
 matplotlib
-tf-keras
-openpyxl
 textblob
-vaderSentiment
+st-gsheets-connection

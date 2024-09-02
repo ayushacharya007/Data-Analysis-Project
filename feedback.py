@@ -1,21 +1,13 @@
 import streamlit as st
-import sqlite3
 import re
 
-# Connect to the existing database
-def connect_db():
-    return sqlite3.connect('app_feedback')
+# path to the csv file
+csv_file_path = "app_feedback.csv"
 
-# Save feedback to the database
+# Save feedback to the csv file
 def save_feedback(name, email, feedback, rating):
-    conn = connect_db()
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO feedback (name, email, feedback, rating)
-        VALUES (?, ?, ?, ?)
-    ''', (name, email, feedback, rating))
-    conn.commit()
-    conn.close()
+    with open(csv_file_path, "a") as file:
+        file.write(f"{name}, {email}, {feedback}, {rating}\n")
 
 # Validate email format
 def is_valid_email(email):
@@ -44,8 +36,6 @@ def feedback_form():
             st.success('Feedback submitted successfully')
     return name, email, feedback, rating
 
-
-# Main function to run the Streamlit app
 def main():
     feedback_form()
 

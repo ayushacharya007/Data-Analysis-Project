@@ -13,9 +13,7 @@ style.css
 fix_data_types.py
 pandasai.log
 .devcontainer/
-app_feedback
-
-
+app_feedback.csv
 .venv/
 
 *.pkl
