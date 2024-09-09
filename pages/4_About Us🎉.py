@@ -1,5 +1,4 @@
 import streamlit as st
-from feedback import main
 st.header("About Our App")
 st.markdown('---')
 
@@ -28,15 +27,3 @@ for i in range(1):
     st.write('')
 
 st.markdown("**Created by Ayush Acharya**", unsafe_allow_html=True)
-
-for i in range(1):
-    st.write('')
-
-if 'feedback' not in st.session_state:
-    st.session_state.feedback = False
-
-if st.button("Feedback"):
-    st.session_state.feedback = not st.session_state.feedback
-
-if st.session_state.feedback:
-    main()

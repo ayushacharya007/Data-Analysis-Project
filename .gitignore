@@ -14,6 +14,7 @@ fix_data_types.py
 pandasai.log
 .devcontainer/
 .venv/
+postgres.py
 
 *.pkl
 

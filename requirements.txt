@@ -14,4 +14,5 @@ unstructured
 seaborn
 matplotlib
 textblob
-st-gsheets-connection
+psycopg2-binary
+sqlalchemy
