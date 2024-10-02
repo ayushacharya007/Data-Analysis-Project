@@ -14,5 +14,5 @@ unstructured
 seaborn
 matplotlib
 textblob
-psycopg2-binary
-sqlalchemy
+openpyxl
+-e .
