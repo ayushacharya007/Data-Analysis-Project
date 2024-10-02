@@ -142,8 +142,7 @@ def plot_wordcloud(data, col):
 @st.cache_data
 def data_overview(data):
     try:
-        with st.container():
-            for col in data.columns:
+        for col in data.columns:
                 _, infos, _, viz, _ = st.columns([0.3, 2.5, 0.5, 2, 0.3], vertical_alignment='center')
                 with st.container():
                     with infos:
@@ -187,6 +186,9 @@ def data_overview(data):
 
                         elif col_type == 'datetime64[ns]':
                             plot_histogram(data, col)
+                        
+                        elif col_type == 'bool':
+                            plot_simple_bar_chart(data, col)
 
                         else:
                             st.info(f"Column '{col}' has an unsupported type '{col_type}'.")

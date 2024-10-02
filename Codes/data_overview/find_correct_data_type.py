@@ -26,28 +26,17 @@ def correct_data_types(data) -> pd.DataFrame:
                     if data_type != 'None':
                         try:
                             if data_type == 'int':
-
-                                if data[column].dtype == 'bool':
-                                    return st.info(f':warning: Error converting column ":blue[{column}]" to ":green[{data_type}]"')
-                                else:
-                                    data[column] = pd.to_numeric(data[column], errors='coerce').astype(int)
+                                 data[column] = pd.to_numeric(data[column], errors='coerce').astype(int)
 
                             elif data_type == 'float':
-
-                                if data[column].dtype == 'bool':
-                                    return st.info(f':warning: Error converting column ":blue[{column}]" to ":green[{data_type}]"')
-                                else:
-                                    data[column] = pd.to_numeric(data[column], errors='coerce').astype(float)
+                                data[column] = pd.to_numeric(data[column], errors='coerce').astype(float)
 
                             elif data_type == 'object':
                                 data[column] = data[column].astype(str)
                                 
                             elif data_type == 'datetime':
-                                if data[column].dtype == 'object':
-                                    data[column] = pd.to_datetime(data[column], errors='coerce')
-                                else:
-                                    return st.info(f':warning: Error converting column ":blue[{column}]" to ":green[{data_type}]"')
-                            
+                                data[column] = pd.to_datetime(data[column], errors='coerce')
+
                             st.write(":blue[**Converted Data Types**] :")
                             st.dataframe(data.dtypes.reset_index().rename(columns={0: 'Data Type', 'index': 'Column'}))
 
