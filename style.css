@@ -94,25 +94,7 @@ h1 {
     text-align: right;
     border: None;
 }
-/* .stButton>button {
-    background-color: #84c1df;
-    color: white;
-    padding: 10px 15px 10px 0px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: opacity 0.3s, background-color 0.3s, color 0.3s;
-    width: 100%;
-    text-align: center;
-}
-.stButton>button:hover {
-    opacity: 0.7;
-    color: white;
-}
-.stButton>button:active {
-    background-color: #d7d3d2;
-    color: white;
-} */
+
 .st-emotion-cache-7ym5gk.ef3psqc12{
     background-color: #6b148b;
     color: white;
