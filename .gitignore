@@ -11,3 +11,5 @@ pandasai.log
 test_codes/
 data/
 .devcontainer/
+.vs/
+.vscode/
