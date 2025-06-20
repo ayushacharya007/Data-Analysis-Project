@@ -58,7 +58,7 @@ Experience the power of our app by clicking [here](https://data-analysis-project
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ayushacharya007/Data-Analysis-Project
    ```
 2. Navigate to the project directory:
    ```bash
